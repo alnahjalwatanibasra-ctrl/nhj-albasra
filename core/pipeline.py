@@ -76,6 +76,31 @@ def _extract(image_paths, key, models, progress, cache_path, vocab=None, cancel=
     return rows
 
 
+def sort_pages_by_numbers(ext):
+    """يعيد ترتيب الصفحات حسب وسيط أرقام كتبها المقروءة — يحمي من رفع الصور
+    بترتيب خاطئ (الترقيم التسلسلي يتوزع بالموضع، فالترتيب الخاطئ = أرقام خاطئة).
+    صفحة بلا أرقام مقروءة تبقى في موضعها النسبي بعد الصفحات المعروفة."""
+    import statistics
+    from collections import defaultdict
+    pages = defaultdict(list)
+    for rec in ext:
+        pages[rec.get('_page', 0)].append(rec)
+    keys = {}
+    for pi, recs in pages.items():
+        nums = []
+        for rec in recs:
+            d = corrections.to_western_digits(rec.get('num', ('', ''))[0])
+            if d.isdigit() and 2 <= len(d) <= 5:
+                nums.append(int(d))
+        keys[pi] = statistics.median(nums) if nums else None
+    known = sorted([pi for pi in pages if keys[pi] is not None], key=lambda pi: keys[pi])
+    unknown = sorted(pi for pi in pages if keys[pi] is None)
+    out = []
+    for pi in known + unknown:
+        out.extend(pages[pi])
+    return out
+
+
 _DIGITS = set('٠١٢٣٤٥٦٧٨٩0123456789 /')
 
 def _is_numeric(s):
@@ -119,6 +144,7 @@ def run(image_paths, reference_path, prev_register_path=None,
 
     vocab = ref.vocab() if (ref and settings.get('vocab_in_prompt', True)) else None
     ext = _extract(image_paths, key, models, progress, cache_path, vocab=vocab, cancel=cancel)
+    ext = sort_pages_by_numbers(ext)   # قبل معالجة الديتو — التكرار يتبع الترتيب الحقيقي
     ext = cleanup_ditto(ext)
 
     def rv(rec, role): return rec.get(role, ('', 'high'))[0]
