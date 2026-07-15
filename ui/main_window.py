@@ -21,6 +21,43 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         lay.addWidget(self.stack, 1)
         self._build_pages()
+        self.btn_settings.clicked.connect(self._open_settings)
+        self._maybe_restore_session()
+
+    def _open_settings(self):
+        from .dialogs.settings_dialog import SettingsDialog
+        SettingsDialog(self.settings, self).exec()
+        self.start_page._refresh()
+
+    def _maybe_restore_session(self):
+        from PySide6.QtWidgets import QMessageBox
+        from . import session
+        data = session.load(session.DEFAULT_PATH)
+        if not data:
+            return
+        n = len(data['result'].get('rows', []))
+        btn = QMessageBox.question(
+            self, 'جلسة سابقة',
+            f'لديك جلسة لم تُصدَّر ({n} صفاً) من {data.get("time", "")} — استكمالها؟')
+        if btn == QMessageBox.StandardButton.Yes:
+            self._last_images = [p for p in data.get('images', []) if os.path.exists(p)]
+            self.review_page.load_result(data['result'], self._last_images)
+            self.stack.setCurrentWidget(self.review_page)
+        else:
+            session.clear(session.DEFAULT_PATH)
+
+    def closeEvent(self, event):
+        from PySide6.QtWidgets import QMessageBox
+        from . import session
+        if (self.stack.currentWidget() is self.review_page
+                and session.load(session.DEFAULT_PATH) is not None):
+            btn = QMessageBox.question(
+                self, 'إغلاق',
+                'المراجعة غير مصدَّرة (محفوظة تلقائياً وستُعرض عند الفتح القادم) — إغلاق؟')
+            if btn != QMessageBox.StandardButton.Yes:
+                event.ignore()
+                return
+        event.accept()
 
     def _topbar(self):
         bar = QWidget(); bar.setObjectName('topbar'); bar.setFixedHeight(52)
