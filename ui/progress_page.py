@@ -16,7 +16,7 @@ class ProgressPage(QWidget):
         self.bar = QProgressBar(); self.bar.setRange(0, 0); self.bar.setFixedWidth(420)
         steps = QLabel('ثم: مطابقة الملف المرجعي ← الترقيم ← جدول المراجعة')
         steps.setStyleSheet('color:#7d8587; font-size:11px'); steps.setAlignment(Qt.AlignCenter)
-        btn = QPushButton('✕  إيقاف'); btn.setObjectName('ghost')
+        btn = QPushButton('إيقاف'); btn.setObjectName('ghost')
         btn.clicked.connect(self.cancelRequested.emit)
         h = QHBoxLayout(); h.addStretch(1); h.addWidget(btn); h.addStretch(1)
         for wdg in (self.lbl, self.bar, steps):

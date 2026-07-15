@@ -7,7 +7,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt, QSize, Signal
 from . import logic
 
-HINT = '💡 الصور الأوضح تعطي نتائج أدق — أرسلها من واتساب كملف لا كصورة'
+HINT = 'الصور الأوضح تعطي نتائج أدق — أرسلها من واتساب كملف لا كصورة'
 IMG_EXTS = ('.jpg', '.jpeg', '.png')
 
 
@@ -99,7 +99,7 @@ class StartPage(QWidget):
         h = QHBoxLayout(); h.addStretch(1)
         step3 = _step_label('③', '')
         h.addWidget(step3)
-        self.btn_start = QPushButton('▶  ابدأ الاستخراج'); self.btn_start.setObjectName('primary')
+        self.btn_start = QPushButton('ابدأ الاستخراج'); self.btn_start.setObjectName('primary')
         self.btn_start.clicked.connect(self._emit_start)
         h.addWidget(self.btn_start); h.addStretch(1)
         v.addLayout(h)
@@ -115,9 +115,14 @@ class StartPage(QWidget):
                 for i in range(self.images_list.count())]
 
     def add_images(self, paths):
+        from PySide6.QtGui import QPixmap
         for p in paths:
             if p and p not in self.images():
-                it = QListWidgetItem(QIcon(p), os.path.basename(p)[:16])
+                # مصغّر يُبنى مرة واحدة — تحميل الصورة الكاملة عند كل رسم كان سبب الثقل
+                pix = QPixmap(p)
+                icon = QIcon(pix.scaled(96, 96, Qt.KeepAspectRatio,
+                                        Qt.SmoothTransformation)) if not pix.isNull() else QIcon()
+                it = QListWidgetItem(icon, os.path.basename(p)[:16])
                 it.setData(Qt.UserRole, p)
                 self.images_list.addItem(it)
         self._refresh()

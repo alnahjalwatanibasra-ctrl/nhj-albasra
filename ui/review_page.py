@@ -8,8 +8,21 @@ from . import logic
 
 CONF_QCOLORS = {'ref': '#C6EFCE', 'word': '#C6EFCE', 'agree': '#DDEBF7',
                 'review': '#FFF2CC', 'phone_unconf': '#FCE4D6'}
-LEGEND = ('🟩 مؤكد من المرجع/Word    🟦 ثقة عالية    '
-          '🟨 يحتاج مراجعة    🟧 هاتف غير مؤكد    ⬜ عدّلته يدوياً')
+
+
+def _chip(color, text):
+    """مربع لون مرسوم (حاد) بدل الرموز التعبيرية النقطية المبكسلة."""
+    return (f'<span style="background:{color}; border:1px solid #b9bfc1;">'
+            f'&nbsp;&nbsp;&nbsp;&nbsp;</span> {text}')
+
+
+LEGEND = ('  '.join([
+    _chip('#C6EFCE', 'مؤكد من المرجع/Word'),
+    _chip('#DDEBF7', 'ثقة عالية'),
+    _chip('#FFF2CC', 'يحتاج مراجعة'),
+    _chip('#FCE4D6', 'هاتف غير مؤكد'),
+    _chip('#FFFFFF', 'عدّلته يدوياً'),
+]))
 
 
 class ReviewPage(QWidget):
@@ -27,7 +40,7 @@ class ReviewPage(QWidget):
         self.btn_image = QPushButton('عرض الصورة'); self.btn_image.setObjectName('ghost')
         self.btn_image.clicked.connect(self._show_image)
         bar.addWidget(self.btn_phones); bar.addWidget(self.btn_image); bar.addStretch(1)
-        self.btn_export = QPushButton('📄  تصدير Excel'); self.btn_export.setObjectName('primary')
+        self.btn_export = QPushButton('تصدير Excel'); self.btn_export.setObjectName('primary')
         self.btn_export.clicked.connect(self.exportRequested.emit)
         bar.addWidget(self.btn_export)
         v.addLayout(bar)
@@ -66,7 +79,7 @@ class ReviewPage(QWidget):
         um = logic.unmatched_rows(result.get('matched', []))
         if um:
             self.lbl_unmatched.setText(
-                f'⚠ {len(um)} من الصفوف لم تُعثر في الملف المرجعي — دقّقها بعناية')
+                f'تنبيه: {len(um)} من الصفوف لم تُعثر في الملف المرجعي — دقّقها بعناية')
             self.lbl_unmatched.show(); self.btn_next_unmatched.show()
             self._um, self._um_pos = um, -1
         else:

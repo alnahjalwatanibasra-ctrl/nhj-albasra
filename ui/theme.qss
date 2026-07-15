@@ -1,4 +1,4 @@
-* { font-family: 'Noor', 'Segoe UI'; font-size: 14px; }
+/* الخط يُضبط في app.py (QFont) حتى لا يفقد التنعيم — لا تعرّفه هنا */
 QMainWindow, QDialog { background: #E7E8EA; }
 #topbar { background: #13908C; }
 #topbar QLabel { color: #FCFEFE; font-size: 15px; font-weight: 600; }

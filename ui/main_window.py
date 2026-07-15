@@ -69,7 +69,7 @@ class MainWindow(QMainWindow):
         h.addWidget(logo)
         h.addWidget(QLabel(TITLE))
         h.addStretch(1)
-        self.btn_settings = QToolButton(); self.btn_settings.setText('⚙  الإعدادات')
+        self.btn_settings = QToolButton(); self.btn_settings.setText('الإعدادات')
         h.addWidget(self.btn_settings)
         return bar
 

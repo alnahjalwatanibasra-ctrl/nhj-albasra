@@ -2,7 +2,7 @@
 """نقطة تشغيل التطبيق: QApplication + الثيم + RTL + الأيقونة."""
 import os, sys, glob
 from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QIcon, QFontDatabase
+from PySide6.QtGui import QIcon, QFontDatabase, QFont
 from PySide6.QtCore import Qt, QLocale
 
 APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -20,6 +20,12 @@ def create_app(argv=None):
     QLocale.setDefault(QLocale(QLocale.Arabic, QLocale.Iraq))
     app.setWindowIcon(QIcon(os.path.join(APP_DIR, 'assets', 'logo.jpg')))
     _load_brand_fonts()
+    # خط نور محوَّل قديم — بلا تنعيم يظهر مبكسلاً؛ نفرض التنعيم ونلغي الـ hinting
+    f = QFont('Noor')
+    f.setPixelSize(15)
+    f.setStyleStrategy(QFont.PreferAntialias)
+    f.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+    app.setFont(f)
     qss = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'theme.qss')
     app.setStyleSheet(open(qss, encoding='utf-8').read())
     return app
