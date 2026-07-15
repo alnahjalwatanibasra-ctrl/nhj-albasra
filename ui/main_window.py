@@ -45,10 +45,24 @@ class MainWindow(QMainWindow):
         self.progress_page = ProgressPage()
         self.stack.addWidget(self.start_page)
         self.stack.addWidget(self.progress_page)
+        from .review_page import ReviewPage
+        self.review_page = ReviewPage()
+        self.stack.addWidget(self.review_page)
         self.start_page.startRequested.connect(self._start_extract)
         self.progress_page.cancelRequested.connect(self._cancel_extract)
+        self.review_page.changed.connect(self._autosave)
+        self.review_page.phonesRequested.connect(self._open_phones)
         self.worker = None
         self._last_images = []
+
+    def _open_phones(self):
+        from .dialogs.phones_dialog import PhonesDialog
+        sugs = self.review_page.result.get('phone_suggestions', [])
+        dlg = PhonesDialog(sugs, self.settings.get('word_folder'), self)
+        dlg.accepted_one.connect(
+            lambda row, phone: self.review_page.set_cell(row, 'رقم الهاتف',
+                                                         phone, color_key='word'))
+        dlg.exec()
 
     def _start_extract(self, images, paths):
         from .worker import ExtractWorker
@@ -68,7 +82,17 @@ class MainWindow(QMainWindow):
 
     def _extract_done(self, res):
         self._last_images = list(self.worker.images)
-        self.stack.setCurrentWidget(self.start_page)   # تُستبدل بصفحة المراجعة في المهمة 7
+        self.review_page.load_result(res, self._last_images)
+        self.stack.setCurrentWidget(self.review_page)
+        self._autosave()
+
+    def _autosave(self):
+        from . import session
+        if self.review_page.result is None:
+            return
+        res = dict(self.review_page.result)
+        res['rows'] = self.review_page.current_rows()
+        session.save(session.DEFAULT_PATH, res, self._last_images)
 
     def _extract_failed(self, err):
         from PySide6.QtWidgets import QMessageBox
