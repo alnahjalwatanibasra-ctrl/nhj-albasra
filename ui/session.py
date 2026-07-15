@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """حفظ الجلسة تلقائياً: بعد الاستخراج وكل تعديل — الاسترجاع عند فتح البرنامج."""
 import json, os, time
+from core.config import APP_DIR
 from . import logic
 
-DEFAULT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                            'session_autosave.json')
+DEFAULT_PATH = os.path.join(APP_DIR, 'session_autosave.json')
 
 
 def save(path, result, images):

@@ -5,7 +5,11 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon, QFontDatabase, QFont
 from PySide6.QtCore import Qt, QLocale
 
-APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# الموارد (الشعار، الخطوط): داخل exe تكون في مجلد التفريغ _MEIPASS؛ تطويراً في جذر المشروع
+if getattr(sys, 'frozen', False):
+    APP_DIR = sys._MEIPASS
+else:
+    APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _load_brand_fonts():

@@ -18,7 +18,10 @@
       "Bash(python -m pytest tests/test_start_page.py -v)",
       "Bash(python run_app.py)",
       "Bash(ls /c/Windows/Fonts/ 2>/dev/null | grep -i noor; ls \"/c/Users/ABR ALSHARQ/AppData/Local/Microsoft/Windows/Fonts/\" 2>/dev/null | grep -i noor)",
-      "PowerShell(\\(Get-ItemProperty 'HKLM:\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Fonts'\\).PSObject.Properties | Where-Object { $_.Name -match 'noor' } | ForEach-Object { \"$\\($_.Name\\) = $\\($_.Value\\)\" }; \\(Get-ItemProperty 'HKCU:\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Fonts' -ErrorAction SilentlyContinue\\).PSObject.Properties | Where-Object { $_.Name -match 'noor' } | ForEach-Object { \"USER: $\\($_.Name\\) = $\\($_.Value\\)\" })"
+      "PowerShell(\\(Get-ItemProperty 'HKLM:\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Fonts'\\).PSObject.Properties | Where-Object { $_.Name -match 'noor' } | ForEach-Object { \"$\\($_.Name\\) = $\\($_.Value\\)\" }; \\(Get-ItemProperty 'HKCU:\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Fonts' -ErrorAction SilentlyContinue\\).PSObject.Properties | Where-Object { $_.Name -match 'noor' } | ForEach-Object { \"USER: $\\($_.Name\\) = $\\($_.Value\\)\" })",
+      "Bash(\"./سجل_الصادر.exe\")",
+      "Bash(tasklist)",
+      "Bash(powershell -Command 'Get-Process | Where-Object {$_.Path -like '\\\\''*dist*'\\\\''} | Select-Object Name, Id | Format-Table')"
     ]
   }
 }

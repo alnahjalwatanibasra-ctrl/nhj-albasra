@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """الإعدادات: المفتاح المشترك، قوائم الاستبدال، تنسيقات — تُحفظ في settings.json."""
-import json, os
+import json, os, sys
 
-APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# داخل exe المجمّد: الملفات القابلة للكتابة (الإعدادات، الجلسة، الكاش) بجانب الـ exe
+if getattr(sys, 'frozen', False):
+    APP_DIR = os.path.dirname(sys.executable)
+else:
+    APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SETTINGS_PATH = os.path.join(APP_DIR, 'settings.json')
 
 DEFAULTS = {

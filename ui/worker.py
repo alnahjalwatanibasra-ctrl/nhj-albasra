@@ -40,8 +40,8 @@ class ExtractWorker(QThread):
         """فهرس Word مخزَّن على القرص — الفهرسة من الصفر (مئات docx) كانت تستغرق دقائق.
         يُعاد البناء فقط إذا تغيّر عدد الملفات أو أحدثها."""
         import json, os
-        cache_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                  'word_index_cache.json')
+        from core.config import APP_DIR
+        cache_path = os.path.join(APP_DIR, 'word_index_cache.json')
         files = []
         for root, _, fs in os.walk(self.word_folder):
             for fn in fs:
