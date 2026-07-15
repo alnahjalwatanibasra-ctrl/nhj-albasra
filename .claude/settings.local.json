@@ -34,7 +34,8 @@
       "Bash(python -m PyInstaller run_app.py --name \"سجلات النهج\" --onefile --windowed --icon assets/logo.ico --add-data \"assets;assets\" --add-data \"ui/theme.qss;ui\" --noconfirm --log-level ERROR)",
       "Bash(rm -f \"/c/Users/ABR ALSHARQ/Desktop/سجل الصادر.exe\" \"/c/Users/ABR ALSHARQ/Desktop/nhj-sadir-app/dist/سجل الصادر.exe\")",
       "Bash(cp \"/c/Users/ABR ALSHARQ/Desktop/nhj-sadir-app/dist/سجلات النهج.exe\" \"/c/Users/ABR ALSHARQ/Desktop/سجلات النهج.exe\")",
-      "Bash(\"./سجلات النهج.exe\")"
+      "Bash(\"./سجلات النهج.exe\")",
+      "Bash(cp \"/c/Users/ABR ALSHARQ/Desktop/PSD & AI/logo.png\" assets/logo.png)"
     ]
   }
 }

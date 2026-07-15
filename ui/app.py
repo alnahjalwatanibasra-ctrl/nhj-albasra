@@ -22,7 +22,7 @@ def create_app(argv=None):
     app = QApplication.instance() or QApplication(argv if argv is not None else sys.argv)
     app.setLayoutDirection(Qt.RightToLeft)
     QLocale.setDefault(QLocale(QLocale.Arabic, QLocale.Iraq))
-    app.setWindowIcon(QIcon(os.path.join(APP_DIR, 'assets', 'logo.jpg')))
+    app.setWindowIcon(QIcon(os.path.join(APP_DIR, 'assets', 'logo.png')))
     _load_brand_fonts()
     # خط نور محوَّل قديم — بلا تنعيم يظهر مبكسلاً؛ نفرض التنعيم ونلغي الـ hinting
     f = QFont('Noor')

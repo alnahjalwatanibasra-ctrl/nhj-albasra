@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
         bar = QWidget(); bar.setObjectName('topbar'); bar.setFixedHeight(52)
         h = QHBoxLayout(bar); h.setContentsMargins(14, 6, 14, 6)
         logo = QLabel()
-        pix = QPixmap(os.path.join(APP_DIR, 'assets', 'logo.jpg'))
+        pix = QPixmap(os.path.join(APP_DIR, 'assets', 'logo.png'))
         if not pix.isNull():
             logo.setPixmap(pix.scaledToHeight(38, Qt.SmoothTransformation))
         h.addWidget(logo)
