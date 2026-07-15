@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(python \"C:\\\\Users\\\\ABRALS~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-ABR-ALSHARQ-Desktop-nhj-sadir-app\\\\10f27d49-b3a8-4a83-9a15-37a6a14ca5b2\\\\scratchpad\\\\test_robustness.py\")",
+      "Bash(rm -f \"/c/Users/ABR ALSHARQ/Desktop/ser/مخرجات_البرنامج.xlsx\" extract_cache.json)",
+      "Read(//c/Users/ABR ALSHARQ/Desktop/ser//**)",
+      "Bash(python \"C:\\\\Users\\\\ABRALS~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-ABR-ALSHARQ-Desktop-nhj-sadir-app\\\\10f27d49-b3a8-4a83-9a15-37a6a14ca5b2\\\\scratchpad\\\\exp_vocab.py\")",
+      "Bash(python run_engine.py)",
+      "WebFetch(domain:ai.google.dev)",
+      "WebSearch",
+      "WebFetch(domain:www.aifreeapi.com)",
+      "Bash(ls -t \"C:\\\\Users\\\\ABRALS~1\\\\AppData\\\\Local\\\\Temp\\\\claude\" 2>/dev/null | head; find \"C:\\\\Users\\\\ABRALS~1\\\\AppData\\\\Local\\\\Temp\\\\claude\" -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' 2>/dev/null | head -5)",
+      "mcp__visualize__show_widget",
+      "Bash(python \"C:\\\\Users\\\\ABRALS~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-ABR-ALSHARQ-Desktop-nhj-sadir-app\\\\10f27d49-b3a8-4a83-9a15-37a6a14ca5b2\\\\scratchpad\\\\compare_vision_gemini.py\")",
+      "Bash(python -m pip install PySide6 pytest --quiet)"
+    ]
+  }
+}

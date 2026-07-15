@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+extract_cache.json
+session_autosave.json
+settings.json
+dist/
+build/
+*.spec

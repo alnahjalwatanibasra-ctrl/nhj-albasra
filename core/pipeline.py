@@ -1,0 +1,214 @@
+# -*- coding: utf-8 -*-
+"""المحرّك الكامل (قائم على الأدوار): صور → Gemini → أدوار الأعمدة → مطابقة المرجع → تصحيحات → ترقيم.
+يعالج كل صورة بعناوينها هي ويربط كل عمود بدوره، فلا تختلّ المحاذاة مع اختلاف العناوين بين الصور."""
+import json as _json, os as _os
+from . import config, gemini_ocr, reference, corrections
+from .reference import norm
+
+# ترتيب الأعمدة (كالمرجع) وأسماؤها القياسية في المخرجات
+ROLE_ORDER = ['num', 'name', 'subj', 'phone', 'date', 'dawira', 'moar', 'jiha']
+CANON = {
+    'num': 'رقم الكتاب', 'name': 'اسم صاحب الكتاب', 'subj': 'موضوع الكتاب',
+    'phone': 'رقم الهاتف', 'date': 'تاريخ الكتاب', 'dawira': 'الدائرة',
+    'moar': 'المعرف', 'jiha': 'الجهة المرسل اليها',
+}
+
+
+def detect_roles(headers):
+    """يربط عناوين صورة بالأدوار (قائم على الكلمات المفتاحية، الهاتف قبل الرقم)."""
+    roles = {}
+    for h in headers:
+        n = norm(h)
+        if 'ملاحظ' in n:              # يُتجاهل
+            continue
+        if 'هاتف' in n or 'موبايل' in n or 'جوال' in n:
+            roles.setdefault('phone', h)
+        elif 'رقم' in n and 'كتاب' in n:
+            roles.setdefault('num', h)
+        elif n == norm('رقم'):
+            roles.setdefault('num', h)
+        elif 'اسم' in n:
+            roles.setdefault('name', h)
+        elif 'موضوع' in n:
+            roles.setdefault('subj', h)
+        elif 'تاريخ' in n:
+            roles.setdefault('date', h)
+        elif 'دائره' in n or 'دائرة' in n:
+            roles.setdefault('dawira', h)
+        elif 'معرف' in n:
+            roles.setdefault('moar', h)
+        elif 'جهه' in n or 'جهة' in n or 'مرسل' in n:
+            roles.setdefault('jiha', h)
+    return roles
+
+
+def _extract(image_paths, key, models, progress, cache_path, vocab=None):
+    """يعيد قائمة صفوف بالأدوار: كل صف {role: (value, conf)}."""
+    if cache_path and _os.path.exists(cache_path):
+        if progress: progress('تحميل الاستخراج المخزّن')
+        pages = _json.load(open(cache_path, encoding='utf-8'))
+    else:
+        pages = []
+        for idx, img in enumerate(image_paths):
+            if progress: progress('استخراج الصورة %d/%d' % (idx + 1, len(image_paths)))
+            res = gemini_ocr.extract_image(key, img, models, vocab=vocab)
+            pages.append(res)
+        if cache_path:
+            _json.dump(pages, open(cache_path, 'w', encoding='utf-8'), ensure_ascii=False)
+
+    rows = []
+    for res in pages:
+        roles = detect_roles(res.get('headers', []))
+        for row in res.get('rows', []):
+            cells = row.get('cells', {})
+            rec = {}
+            for role, header in roles.items():
+                cell = cells.get(header, {})
+                rec[role] = (gemini_ocr.cell_value(cell), gemini_ocr.cell_conf(cell))
+            rows.append(rec)
+    return rows
+
+
+_DIGITS = set('٠١٢٣٤٥٦٧٨٩0123456789 /')
+
+def _is_numeric(s):
+    s = (s or '').strip()
+    return bool(s) and set(s) <= set('٠١٢٣٤٥٦٧٨٩0123456789') and s != ''
+
+def _looks_date(s):
+    s = (s or '').strip()
+    return ('/' in s) or ('-' in s)
+
+def cleanup_ditto(ext):
+    """يصحّح خلايا التكرار المشوّشة حتمياً: يكرّر آخر قيمة صحيحة نزولاً،
+    ويكشف الأخطاء (تاريخ بلا «/»، جهة/موضوع رقمي، معرف = الاسم)."""
+    last = {}
+    for rec in ext:
+        name = (rec.get('name', ('', ''))[0] or '').strip()
+        for role in ('subj', 'date', 'jiha', 'moar', 'dawira'):
+            v, cf = rec.get(role, ('', 'high'))
+            vs = (v or '').strip()
+            bad = False
+            if role == 'date':
+                bad = bool(vs) and not _looks_date(vs)          # تاريخ بلا فاصل = خطأ (رقم كتاب)
+            elif role in ('jiha', 'subj'):
+                bad = _is_numeric(vs)                             # قيمة رقمية بحتة = خطأ
+            elif role == 'moar':
+                bad = bool(vs) and name and norm(vs) == norm(name)  # المعرف = الاسم = خطأ
+            if (not vs) or bad:
+                if role in last:
+                    rec[role] = (last[role], cf)
+            else:
+                last[role] = vs
+    return ext
+
+
+def run(image_paths, reference_path, prev_register_path=None,
+        settings=None, progress=None, cache_path=None):
+    settings = settings or config.load_settings()
+    key = config.get_key(settings)
+    models = settings['gemini_models']
+    ref = reference.Reference(reference_path) if reference_path else None
+
+    vocab = ref.vocab() if (ref and settings.get('vocab_in_prompt', True)) else None
+    ext = _extract(image_paths, key, models, progress, cache_path, vocab=vocab)
+    ext = cleanup_ditto(ext)
+
+    def rv(rec, role): return rec.get(role, ('', 'high'))[0]
+    def rc(rec, role): return rec.get(role, ('', 'high'))[1]
+
+    th = settings.get('match_threshold', 0.82)
+    ftok = settings.get('first_token_threshold', 0.55)
+    rare = settings.get('rare_referrer_max', 4)
+    pull = settings.get('reference_pull_fields', [])
+    repl = settings.get('subject_replacements', {})
+    arabic = settings.get('arabic_numerals', True)
+
+    # مطابقة المرجع (محاذاة تسلسلية: السجل غالباً مقطع متتالٍ من صفوف المرجع)
+    if ref:
+        signals = [{'name': rv(rec, 'name'), 'moar': rv(rec, 'moar'), 'subj': rv(rec, 'subj')}
+                   for rec in ext]
+        hits = ref.align(signals, th=th, ftok_th=ftok, rare_max=rare)
+    else:
+        hits = [None] * len(ext)
+    # إزالة التكرار المتتالي (نفس صف المرجع نفسه على صفّين = تسرّب ديتو)
+    for i in range(1, len(hits)):
+        if hits[i] is not None and hits[i] is hits[i - 1]:
+            hits[i] = None
+
+    # ترقيم متسلسل: من آخر رقم في السجل السابق، وإلا يُستنتج البدء من أرقام الصور
+    seq = None
+    if prev_register_path:
+        last = corrections.last_book_number(prev_register_path)
+        if last is not None:
+            seq = corrections.sequential_numbers(len(ext), last + 1)
+    if seq is None:
+        start = corrections.infer_start_number(
+            [corrections.to_western_digits(rv(rec, 'num')) for rec in ext])
+        if start is not None:
+            seq = corrections.sequential_numbers(len(ext), start)
+
+    # الأعمدة الظاهرة = الأدوار المكتشفة في أي صورة + الدائرة إن طُلب سحبها
+    present = set()
+    for rec in ext: present |= set(rec.keys())
+    if 'دائرة' in pull: present.add('dawira')
+    out_roles = [r for r in ROLE_ORDER if r in present]
+    headers = [CANON[r] for r in out_roles]
+
+    rows, colors = [], {}
+    for i, rec in enumerate(ext):
+        hit = hits[i]
+        out = {}
+        # القيم من الاستخراج
+        for r in out_roles:
+            out[CANON[r]] = rv(rec, r)
+        # الموضوع: تصحيح المصطلحات
+        if 'subj' in out_roles:
+            out[CANON['subj']] = corrections.apply_replacements(out[CANON['subj']], repl)
+        # رقم الكتاب: ترقيم متسلسل
+        if 'num' in out_roles:
+            v = seq[i] if seq else corrections.to_western_digits(rv(rec, 'num'))
+            out[CANON['num']] = corrections.to_arabic(v) if (arabic and str(v)) else v
+        # الهاتف المستخرج: توحيد (٠٧ + ١١ خانة) بأرقام عربية
+        if 'phone' in out_roles:
+            pv = corrections.format_phone(out[CANON['phone']], arabic=arabic)
+            out[CANON['phone']] = pv if pv else out[CANON['phone']]
+
+        if hit:
+            def _pull(role, value):
+                out[CANON[role]] = value; colors[(i, CANON[role])] = 'ref'
+            _pull('name', hit.get('name', out.get(CANON['name'], '')))
+            if 'هاتف' in pull and 'phone' in hit:
+                ph = corrections.format_phone(hit.get('phone'), arabic=arabic)
+                # مرجع بلا خانات (فارغ أو «لا يوجد») = لا هاتف لهذا الشخص فعلاً
+                _pull('phone', ph if ph else 'لا يوجد')
+            if 'معرف' in pull and hit.get('moar'):
+                _pull('moar', hit['moar'])
+            if 'دائرة' in pull and hit.get('dawira') and 'dawira' in present:
+                _pull('dawira', hit['dawira'])
+            if 'موضوع' in pull and hit.get('subj') and 'subj' in out_roles:
+                _pull('subj', corrections.apply_replacements(str(hit['subj']), repl))
+            if 'جهة' in pull and hit.get('jiha') and 'jiha' in out_roles:
+                _pull('jiha', hit['jiha'])
+            if 'تاريخ' in pull and hit.get('date') and 'date' in out_roles:
+                dt = corrections.format_ref_date(hit['date'], arabic=arabic)
+                if dt:
+                    _pull('date', dt)
+        else:
+            # ثقة Gemini
+            if rc(rec, 'name') == 'low':
+                colors[(i, CANON['name'])] = 'review'
+            pv = corrections.to_western_digits(rv(rec, 'phone'))
+            if pv and (len(pv) != 11 or pv[:2] != '07' or rc(rec, 'phone') == 'low'):
+                if CANON['phone'] in out:
+                    colors[(i, CANON['phone'])] = 'phone_unconf'
+        rows.append(out)
+
+    return {
+        'headers': headers,
+        'rows': rows,
+        'colors': colors,
+        'ref_columns': ref.detected_columns() if ref else {},
+        'names': [rv(rec, 'name') for rec in ext],
+        'matched': [bool(h) for h in hits],
+    }
