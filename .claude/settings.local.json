@@ -14,7 +14,8 @@
       "mcp__visualize__show_widget",
       "Bash(python \"C:\\\\Users\\\\ABRALS~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-ABR-ALSHARQ-Desktop-nhj-sadir-app\\\\10f27d49-b3a8-4a83-9a15-37a6a14ca5b2\\\\scratchpad\\\\compare_vision_gemini.py\")",
       "Bash(python -m pip install PySide6 pytest --quiet)",
-      "Bash(python -m pytest tests/test_pipeline_additions.py -v)"
+      "Bash(python -m pytest tests/test_pipeline_additions.py -v)",
+      "Bash(python -m pytest tests/test_start_page.py -v)"
     ]
   }
 }
