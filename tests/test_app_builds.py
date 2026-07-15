@@ -9,5 +9,5 @@ from ui.main_window import MainWindow
 def test_main_window_builds():
     app = create_app([])
     win = MainWindow()
-    assert 'سجل الصادر' in win.windowTitle()
+    assert 'سجلات النهج' in win.windowTitle()
     assert app.layoutDirection() == Qt.RightToLeft

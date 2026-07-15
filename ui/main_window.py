@@ -7,7 +7,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
 from .app import APP_DIR
 
-TITLE = 'سجل الصادر — تحالف النهج الوطني'
+TITLE = 'سجلات النهج — تحالف النهج الوطني'
 
 
 class MainWindow(QMainWindow):

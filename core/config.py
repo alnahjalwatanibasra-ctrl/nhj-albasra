@@ -6,7 +6,7 @@ import json, os, sys
 # حتى يبقى ملف exe وحيداً نظيفاً على سطح المكتب بلا ملفات متناثرة حوله
 if getattr(sys, 'frozen', False):
     EXE_DIR = os.path.dirname(sys.executable)
-    APP_DIR = os.path.join(os.environ.get('APPDATA', EXE_DIR), 'سجل الصادر - النهج')
+    APP_DIR = os.path.join(os.environ.get('APPDATA', EXE_DIR), 'سجلات النهج')
     try:
         os.makedirs(APP_DIR, exist_ok=True)
     except OSError:
@@ -57,8 +57,11 @@ def get_key(settings=None):
     settings = settings or load_settings()
     if settings.get('gemini_key'):
         return settings['gemini_key'].strip()
+    # الأولوية: مفتاح الإعدادات ⟵ ملف بجانب exe (تجاوز اختياري) ⟵ المفتاح المضمّن داخل البرنامج
+    embedded = os.path.join(getattr(sys, '_MEIPASS', APP_DIR), 'assets', 'keys', 'gemini_key.txt')
     for p in (os.path.join(EXE_DIR, 'gemini_key.txt'),
               os.path.join(APP_DIR, 'gemini_key.txt'),
+              embedded,
               r'C:\Users\ABR ALSHARQ\Desktop\ser\gemini_key.txt'):
         if os.path.exists(p):
             return open(p, encoding='utf-8').read().strip()

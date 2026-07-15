@@ -26,7 +26,15 @@
       "Read(//c/Users/ABR ALSHARQ/Desktop//**)",
       "Read(//c/Users/ABR ALSHARQ/Desktop/**)",
       "Bash(\"./سجل الصادر.exe\")",
-      "Bash(powershell -Command 'Get-Process | Where-Object {$_.Path -like '\\\\''*Desktop*'\\\\''} | Select-Object Name, Id')"
+      "Bash(powershell -Command 'Get-Process | Where-Object {$_.Path -like '\\\\''*Desktop*'\\\\''} | Select-Object Name, Id')",
+      "Bash(mkdir -p assets/keys)",
+      "Bash(cp \"/c/Users/ABR ALSHARQ/Desktop/ser/gemini_key.txt\" assets/keys/gemini_key.txt)",
+      "Bash(echo \"assets/keys/\")",
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(python -m PyInstaller run_app.py --name \"سجلات النهج\" --onefile --windowed --icon assets/logo.ico --add-data \"assets;assets\" --add-data \"ui/theme.qss;ui\" --noconfirm --log-level ERROR)",
+      "Bash(rm -f \"/c/Users/ABR ALSHARQ/Desktop/سجل الصادر.exe\" \"/c/Users/ABR ALSHARQ/Desktop/nhj-sadir-app/dist/سجل الصادر.exe\")",
+      "Bash(cp \"/c/Users/ABR ALSHARQ/Desktop/nhj-sadir-app/dist/سجلات النهج.exe\" \"/c/Users/ABR ALSHARQ/Desktop/سجلات النهج.exe\")",
+      "Bash(\"./سجلات النهج.exe\")"
     ]
   }
 }
