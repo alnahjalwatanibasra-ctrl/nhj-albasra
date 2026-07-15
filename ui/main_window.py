@@ -52,8 +52,50 @@ class MainWindow(QMainWindow):
         self.progress_page.cancelRequested.connect(self._cancel_extract)
         self.review_page.changed.connect(self._autosave)
         self.review_page.phonesRequested.connect(self._open_phones)
+        self.review_page.exportRequested.connect(self._do_export)
         self.worker = None
         self._last_images = []
+
+    def _do_export(self):
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        from core.excel_export import export
+        from core.corrections import to_western_digits
+        from . import logic, session
+        rows = self.review_page.current_rows()
+        res = self.review_page.result
+        # اقتراحات هواتف لم تُراجع: صفّها ما زال بلا خانات هاتف
+        left = [s for s in res.get('phone_suggestions', [])
+                if not to_western_digits(rows[s['row']].get('رقم الهاتف', ''))]
+        if left:
+            btn = QMessageBox.question(
+                self, 'تنبيه',
+                f'توجد {len(left)} اقتراحات هواتف لم تُؤكد — تصدير على أي حال؟')
+            if btn != QMessageBox.StandardButton.Yes:
+                return
+        path, _ = QFileDialog.getSaveFileName(self, 'حفظ السجل',
+                                              logic.export_filename(rows),
+                                              'Excel (*.xlsx)')
+        if not path:
+            return
+        try:
+            export(path, res['headers'], rows, colors=res['colors'], source_col=False)
+        except PermissionError:
+            QMessageBox.warning(self, 'الملف مفتوح',
+                                'أغلق الملف في Excel ثم أعد المحاولة.')
+            return
+        session.clear(session.DEFAULT_PATH)
+        box = QMessageBox(self)
+        box.setWindowTitle('تم التصدير')
+        box.setText('تم حفظ السجل بنجاح.')
+        b_file = box.addButton('فتح الملف', QMessageBox.ButtonRole.AcceptRole)
+        b_dir = box.addButton('فتح المجلد', QMessageBox.ButtonRole.ActionRole)
+        box.addButton('إغلاق', QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        import subprocess
+        if box.clickedButton() is b_file:
+            os.startfile(path)
+        elif box.clickedButton() is b_dir:
+            subprocess.Popen(['explorer', '/select,', os.path.normpath(path)])
 
     def _open_phones(self):
         from .dialogs.phones_dialog import PhonesDialog
