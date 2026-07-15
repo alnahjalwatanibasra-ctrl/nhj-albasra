@@ -59,26 +59,43 @@ def _call(key, model, img_bytes, timeout=120, prompt=None):
     return json.loads(txt)
 
 
-def extract_image(key, img_path, models, vocab=None):
-    """يعيد dict {headers, rows} حيث كل خلية {v, c}. يعيد المحاولة ويتناوب النماذج.
-    vocab: قوائم مفردات المرجع تُحقن في الـ prompt لترشيد قراءة خط اليد."""
+# نماذج نفدت حصتها في هذه الجلسة — لا نعيد تجربتها مع كل صورة (كانت سبب بطء شديد)
+_dead_models = set()
+
+
+def reset_dead_models():
+    _dead_models.clear()
+
+
+def extract_image(key, img_path, models, vocab=None, progress=None):
+    """يعيد dict {headers, rows} حيث كل خلية {v, c}. يتناوب النماذج:
+    خطأ الحصة (429) ⟵ تحويل فوري للنموذج التالي بلا انتظار، ويُحفظ أنه ممتلئ للجلسة.
+    أخطاء الخادم/الشبكة العابرة ⟵ محاولتان لكل نموذج بانتظار قصير."""
     data = open(img_path, 'rb').read()
     prompt = build_prompt(vocab)
     last_err = None
-    for attempt in range(6):
-        model = models[min(attempt, len(models) - 1)]
-        try:
-            out = _call(key, model, data, prompt=prompt)
-            return {'headers': out.get('headers', []), 'rows': out.get('rows', []), 'model': model}
-        except urllib.error.HTTPError as e:
-            last_err = f'HTTP {e.code}'
-            if e.code in (429, 500, 503):
-                time.sleep(3 + attempt * 3); continue
-            raise
-        except (urllib.error.URLError, ConnectionResetError, OSError, TimeoutError) as e:
-            last_err = str(e); time.sleep(3 + attempt * 3); continue
-        except (KeyError, ValueError, json.JSONDecodeError) as e:
-            last_err = 'parse: ' + str(e); time.sleep(2); continue
+    queue = ([m for m in models if m not in _dead_models]
+             or list(models))          # إن امتلأ الجميع جرّبها كلها مجدداً
+    for model in queue:
+        for attempt in range(2):
+            try:
+                out = _call(key, model, data, prompt=prompt)
+                return {'headers': out.get('headers', []), 'rows': out.get('rows', []),
+                        'model': model}
+            except urllib.error.HTTPError as e:
+                last_err = f'HTTP {e.code} ({model})'
+                if e.code == 429:
+                    _dead_models.add(model)
+                    if progress:
+                        progress('حصة النموذج %s ممتلئة — التحويل للاحتياطي' % model)
+                    break              # فوراً للنموذج التالي — لا انتظار على حصة ممتلئة
+                if e.code in (500, 503):
+                    time.sleep(2); continue
+                raise
+            except (urllib.error.URLError, ConnectionResetError, OSError, TimeoutError) as e:
+                last_err = str(e); time.sleep(2); continue
+            except (KeyError, ValueError, json.JSONDecodeError) as e:
+                last_err = 'parse: ' + str(e); time.sleep(1); continue
     raise RuntimeError('فشل استخراج Gemini بعد عدة محاولات: ' + str(last_err))
 
 

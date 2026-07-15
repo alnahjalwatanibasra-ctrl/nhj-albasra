@@ -36,6 +36,37 @@ class ExtractWorker(QThread):
         except Exception:
             self.failed.emit(traceback.format_exc(limit=2))
 
+    def _load_or_build_index(self):
+        """فهرس Word مخزَّن على القرص — الفهرسة من الصفر (مئات docx) كانت تستغرق دقائق.
+        يُعاد البناء فقط إذا تغيّر عدد الملفات أو أحدثها."""
+        import json, os
+        cache_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                  'word_index_cache.json')
+        files = []
+        for root, _, fs in os.walk(self.word_folder):
+            for fn in fs:
+                if fn.lower().endswith('.docx') and not fn.startswith('~$'):
+                    files.append(os.path.join(root, fn))
+        sig = {'folder': self.word_folder, 'count': len(files),
+               'newest': max((os.path.getmtime(p) for p in files), default=0)}
+        try:
+            cached = json.load(open(cache_path, encoding='utf-8'))
+            if cached.get('sig') == sig:
+                return cached['index']
+        except Exception:
+            pass
+        idx = word_phones.build_index(
+            self.word_folder,
+            progress=lambda i, n: self.progressed.emit(
+                f'فهرسة ملفات Word {i}/{n} (مرة واحدة — تُحفظ للمرات القادمة)')
+            if i % 50 == 0 else None)
+        try:
+            json.dump({'sig': sig, 'index': idx},
+                      open(cache_path, 'w', encoding='utf-8'), ensure_ascii=False)
+        except OSError:
+            pass
+        return idx
+
     def _suggest_phones(self, res):
         """[{row, name, phone, file, score}] للصفوف الناقصة — تأكيد بشري لاحقاً."""
         if not self.word_folder:
@@ -44,10 +75,7 @@ class ExtractWorker(QThread):
         if not missing:
             return []
         self.progressed.emit('بحث الهواتف في ملفات Word...')
-        idx = word_phones.build_index(
-            self.word_folder,
-            progress=lambda i, n: self.progressed.emit(f'فهرسة ملفات Word {i}/{n}')
-            if i % 100 == 0 else None)
+        idx = self._load_or_build_index()
         out = []
         name_h = 'اسم صاحب الكتاب'
         for i in missing:

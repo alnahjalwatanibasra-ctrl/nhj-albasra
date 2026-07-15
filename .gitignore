@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 extract_cache.json
 session_autosave.json
+word_index_cache.json
 settings.json
 dist/
 build/

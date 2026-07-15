@@ -57,7 +57,7 @@ def _extract(image_paths, key, models, progress, cache_path, vocab=None, cancel=
             if cancel is not None and cancel.is_set():
                 raise CancelledError()
             if progress: progress('استخراج الصورة %d/%d' % (idx + 1, len(image_paths)))
-            res = gemini_ocr.extract_image(key, img, models, vocab=vocab)
+            res = gemini_ocr.extract_image(key, img, models, vocab=vocab, progress=progress)
             pages.append(res)
         if cache_path:
             _json.dump(pages, open(cache_path, 'w', encoding='utf-8'), ensure_ascii=False)
