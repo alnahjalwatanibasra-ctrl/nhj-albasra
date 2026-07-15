@@ -5,6 +5,10 @@ import json as _json, os as _os
 from . import config, gemini_ocr, reference, corrections
 from .reference import norm
 
+
+class CancelledError(Exception):
+    """أوقف المستخدم الاستخراج."""
+
 # ترتيب الأعمدة (كالمرجع) وأسماؤها القياسية في المخرجات
 ROLE_ORDER = ['num', 'name', 'subj', 'phone', 'date', 'dawira', 'moar', 'jiha']
 CANON = {
@@ -42,14 +46,16 @@ def detect_roles(headers):
     return roles
 
 
-def _extract(image_paths, key, models, progress, cache_path, vocab=None):
-    """يعيد قائمة صفوف بالأدوار: كل صف {role: (value, conf)}."""
+def _extract(image_paths, key, models, progress, cache_path, vocab=None, cancel=None):
+    """يعيد قائمة صفوف بالأدوار: كل صف {role: (value, conf)} + '_page' فهرس صفحته."""
     if cache_path and _os.path.exists(cache_path):
         if progress: progress('تحميل الاستخراج المخزّن')
         pages = _json.load(open(cache_path, encoding='utf-8'))
     else:
         pages = []
         for idx, img in enumerate(image_paths):
+            if cancel is not None and cancel.is_set():
+                raise CancelledError()
             if progress: progress('استخراج الصورة %d/%d' % (idx + 1, len(image_paths)))
             res = gemini_ocr.extract_image(key, img, models, vocab=vocab)
             pages.append(res)
@@ -57,7 +63,7 @@ def _extract(image_paths, key, models, progress, cache_path, vocab=None):
             _json.dump(pages, open(cache_path, 'w', encoding='utf-8'), ensure_ascii=False)
 
     rows = []
-    for res in pages:
+    for pi, res in enumerate(pages):
         roles = detect_roles(res.get('headers', []))
         for row in res.get('rows', []):
             cells = row.get('cells', {})
@@ -65,6 +71,7 @@ def _extract(image_paths, key, models, progress, cache_path, vocab=None):
             for role, header in roles.items():
                 cell = cells.get(header, {})
                 rec[role] = (gemini_ocr.cell_value(cell), gemini_ocr.cell_conf(cell))
+            rec['_page'] = pi
             rows.append(rec)
     return rows
 
@@ -104,14 +111,14 @@ def cleanup_ditto(ext):
 
 
 def run(image_paths, reference_path, prev_register_path=None,
-        settings=None, progress=None, cache_path=None):
+        settings=None, progress=None, cache_path=None, cancel=None):
     settings = settings or config.load_settings()
     key = config.get_key(settings)
     models = settings['gemini_models']
     ref = reference.Reference(reference_path) if reference_path else None
 
     vocab = ref.vocab() if (ref and settings.get('vocab_in_prompt', True)) else None
-    ext = _extract(image_paths, key, models, progress, cache_path, vocab=vocab)
+    ext = _extract(image_paths, key, models, progress, cache_path, vocab=vocab, cancel=cancel)
     ext = cleanup_ditto(ext)
 
     def rv(rec, role): return rec.get(role, ('', 'high'))[0]
@@ -150,7 +157,7 @@ def run(image_paths, reference_path, prev_register_path=None,
 
     # الأعمدة الظاهرة = الأدوار المكتشفة في أي صورة + الدائرة إن طُلب سحبها
     present = set()
-    for rec in ext: present |= set(rec.keys())
+    for rec in ext: present |= (set(rec.keys()) - {'_page'})
     if 'دائرة' in pull: present.add('dawira')
     out_roles = [r for r in ROLE_ORDER if r in present]
     headers = [CANON[r] for r in out_roles]
@@ -211,4 +218,5 @@ def run(image_paths, reference_path, prev_register_path=None,
         'ref_columns': ref.detected_columns() if ref else {},
         'names': [rv(rec, 'name') for rec in ext],
         'matched': [bool(h) for h in hits],
+        'row_pages': [rec.get('_page', 0) for rec in ext],
     }
