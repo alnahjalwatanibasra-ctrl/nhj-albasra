@@ -2,11 +2,17 @@
 """الإعدادات: المفتاح المشترك، قوائم الاستبدال، تنسيقات — تُحفظ في settings.json."""
 import json, os, sys
 
-# داخل exe المجمّد: الملفات القابلة للكتابة (الإعدادات، الجلسة، الكاش) بجانب الـ exe
+# داخل exe المجمّد: الملفات القابلة للكتابة (الإعدادات، الجلسة، الكاش) في AppData
+# حتى يبقى ملف exe وحيداً نظيفاً على سطح المكتب بلا ملفات متناثرة حوله
 if getattr(sys, 'frozen', False):
-    APP_DIR = os.path.dirname(sys.executable)
+    EXE_DIR = os.path.dirname(sys.executable)
+    APP_DIR = os.path.join(os.environ.get('APPDATA', EXE_DIR), 'سجل الصادر - النهج')
+    try:
+        os.makedirs(APP_DIR, exist_ok=True)
+    except OSError:
+        APP_DIR = EXE_DIR
 else:
-    APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    EXE_DIR = APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SETTINGS_PATH = os.path.join(APP_DIR, 'settings.json')
 
 DEFAULTS = {
@@ -51,7 +57,8 @@ def get_key(settings=None):
     settings = settings or load_settings()
     if settings.get('gemini_key'):
         return settings['gemini_key'].strip()
-    for p in (os.path.join(APP_DIR, 'gemini_key.txt'),
+    for p in (os.path.join(EXE_DIR, 'gemini_key.txt'),
+              os.path.join(APP_DIR, 'gemini_key.txt'),
               r'C:\Users\ABR ALSHARQ\Desktop\ser\gemini_key.txt'):
         if os.path.exists(p):
             return open(p, encoding='utf-8').read().strip()

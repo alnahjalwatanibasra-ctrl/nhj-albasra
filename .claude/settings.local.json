@@ -21,7 +21,12 @@
       "PowerShell(\\(Get-ItemProperty 'HKLM:\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Fonts'\\).PSObject.Properties | Where-Object { $_.Name -match 'noor' } | ForEach-Object { \"$\\($_.Name\\) = $\\($_.Value\\)\" }; \\(Get-ItemProperty 'HKCU:\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Fonts' -ErrorAction SilentlyContinue\\).PSObject.Properties | Where-Object { $_.Name -match 'noor' } | ForEach-Object { \"USER: $\\($_.Name\\) = $\\($_.Value\\)\" })",
       "Bash(\"./سجل_الصادر.exe\")",
       "Bash(tasklist)",
-      "Bash(powershell -Command 'Get-Process | Where-Object {$_.Path -like '\\\\''*dist*'\\\\''} | Select-Object Name, Id | Format-Table')"
+      "Bash(powershell -Command 'Get-Process | Where-Object {$_.Path -like '\\\\''*dist*'\\\\''} | Select-Object Name, Id | Format-Table')",
+      "Bash(cp \"/c/Users/ABR ALSHARQ/Desktop/nhj-sadir-app/dist/سجل الصادر.exe\" \"/c/Users/ABR ALSHARQ/Desktop/سجل الصادر.exe\")",
+      "Read(//c/Users/ABR ALSHARQ/Desktop//**)",
+      "Read(//c/Users/ABR ALSHARQ/Desktop/**)",
+      "Bash(\"./سجل الصادر.exe\")",
+      "Bash(powershell -Command 'Get-Process | Where-Object {$_.Path -like '\\\\''*Desktop*'\\\\''} | Select-Object Name, Id')"
     ]
   }
 }

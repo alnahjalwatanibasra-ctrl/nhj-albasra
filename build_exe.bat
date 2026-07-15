@@ -1,4 +1,4 @@
 @echo off
-rem بناء نسخة التوزيع: dist\سجل_الصادر\سجل_الصادر.exe
-python -m PyInstaller run_app.py --name "سجل_الصادر" --windowed --icon assets/logo.ico --add-data "assets;assets" --add-data "ui/theme.qss;ui" --noconfirm
+rem بناء ملف التوزيع الوحيد: dist\سجل الصادر.exe (انسخه لسطح المكتب أو أي مكان)
+python -m PyInstaller run_app.py --name "سجل الصادر" --onefile --windowed --icon assets/logo.ico --add-data "assets;assets" --add-data "ui/theme.qss;ui" --noconfirm
 pause
