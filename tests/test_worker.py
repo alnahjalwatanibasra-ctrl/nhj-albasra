@@ -10,8 +10,12 @@ def test_worker_emits_finished(monkeypatch):
     app = create_app([])
     fake = {'headers': ['رقم الكتاب'], 'rows': [], 'colors': {}, 'matched': [],
             'row_pages': [], 'names': []}
-    monkeypatch.setattr(worker.pipeline, 'run',
-                        lambda *a, **k: (k.get('progress') or (lambda m: None))('تجريب') or fake)
+    def fake_run(*a, **k):
+        cb = k.get('progress')
+        if cb:
+            cb('تجريب')
+        return fake
+    monkeypatch.setattr(worker.pipeline, 'run', fake_run)
     w = worker.ExtractWorker(images=['x.jpg'], reference='r.xlsx',
                              prev_register=None, word_folder=None)
     done = {}
