@@ -117,6 +117,16 @@ class ReviewPage(QWidget):
             self.lbl_quality.hide()
         self._loading = False
 
+    def set_phone_suggestions(self, sugs):
+        """تصل من الخلفية بعد عرض الجدول (فهرسة Word لا تؤخر النتائج)."""
+        if self.result is None:
+            return
+        self.result['phone_suggestions'] = sugs
+        n = len(sugs)
+        self.btn_phones.setText(f'تأكيد الهواتف ({n})')
+        self.btn_phones.setEnabled(n > 0)
+        self.changed.emit()
+
     def current_rows(self):
         headers = self.result['headers']
         return [{h: (self.table.item(i, c).text() if self.table.item(i, c) else '')

@@ -9,6 +9,7 @@ from . import logic
 class ExtractWorker(QThread):
     progressed = Signal(str)
     finished_ok = Signal(dict)
+    phones_ready = Signal(list)      # اقتراحات Word تُبنى بعد عرض النتائج — لا تؤخرها
     failed = Signal(str)
 
     def __init__(self, images, reference, prev_register=None, word_folder=None):
@@ -29,8 +30,11 @@ class ExtractWorker(QThread):
                                progress=self.progressed.emit,
                                cache_path=None,
                                cancel=self.cancel)
-            res['phone_suggestions'] = self._suggest_phones(res)
-            self.finished_ok.emit(res)
+            res['phone_suggestions'] = []
+            self.finished_ok.emit(res)          # الجدول يظهر فوراً
+            sugs = self._suggest_phones(res)    # فهرسة Word (قد تطول أول مرة) في الخلفية
+            if sugs and not self.cancel.is_set():
+                self.phones_ready.emit(sugs)
         except pipeline.CancelledError:
             self.failed.emit('CANCELLED')
         except Exception:

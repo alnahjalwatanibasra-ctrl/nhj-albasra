@@ -162,8 +162,10 @@ class MainWindow(QMainWindow):
                                     paths['prev_register'], paths['word_folder'])
         self.worker.progressed.connect(self.progress_page.set_status)
         self.worker.finished_ok.connect(self._extract_done)
+        self.worker.phones_ready.connect(self._phones_ready)
         self.worker.failed.connect(self._extract_failed)
         self.progress_page.set_status('جاري التحضير...')
+        self.progress_page.start_clock()
         self.stack.setCurrentWidget(self.progress_page)
         self.worker.start()
 
@@ -173,10 +175,14 @@ class MainWindow(QMainWindow):
             self.progress_page.set_status('جاري الإيقاف...')
 
     def _extract_done(self, res):
+        self.progress_page.stop_clock()
         self._last_images = list(self.worker.images)
         self.review_page.load_result(res, self._last_images)
         self.stack.setCurrentWidget(self.review_page)
         self._autosave()
+
+    def _phones_ready(self, sugs):
+        self.review_page.set_phone_suggestions(sugs)
 
     def _autosave(self):
         from . import session
@@ -188,6 +194,7 @@ class MainWindow(QMainWindow):
 
     def _extract_failed(self, err):
         from PySide6.QtWidgets import QMessageBox
+        self.progress_page.stop_clock()
         self.stack.setCurrentWidget(self.start_page)
         if err == 'CANCELLED':
             return
