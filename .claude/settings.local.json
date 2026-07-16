@@ -39,7 +39,8 @@
       "PowerShell(ie4uinit.exe -show)",
       "Bash(mv \"سجلات النهج.exe\" \"سجلات النهج_tmp.exe\")",
       "Bash(mv \"سجلات النهج_tmp.exe\" \"سجلات النهج.exe\")",
-      "Bash(rm -f \"/c/Users/ABR ALSHARQ/Desktop/سجلات النهج.exe\")"
+      "Bash(rm -f \"/c/Users/ABR ALSHARQ/Desktop/سجلات النهج.exe\")",
+      "Bash(python -X utf8 -c ' *)"
     ]
   }
 }

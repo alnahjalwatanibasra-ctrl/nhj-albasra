@@ -1,6 +1,28 @@
 # -*- coding: utf-8 -*-
 """استخراج جدول سجل الصادر من صورة عبر Gemini (استخراج كامل + ثقة لكل خلية)."""
-import urllib.request, urllib.parse, json, base64, time
+import urllib.request, urllib.parse, json, base64, time, io
+
+MAX_SIDE = 2200      # صور الكاميرا الضخمة تُبطئ الرفع وتُسقط المهلة — التصغير لا يضر خط اليد
+
+
+def prepare_image_bytes(img_path):
+    """يصغّر الصور الأكبر من MAX_SIDE قبل الإرسال (JPEG جودة 88).
+    صورة كاميرا 4000px/8MB ⟵ ~2200px/أقل من 1MB: رفع أسرع بكثير وبلا فقد قراءة."""
+    raw = open(img_path, 'rb').read()
+    try:
+        from PIL import Image
+        im = Image.open(io.BytesIO(raw))
+        if max(im.size) <= MAX_SIDE:
+            return raw
+        im = im.convert('RGB')
+        ratio = MAX_SIDE / max(im.size)
+        im = im.resize((round(im.width * ratio), round(im.height * ratio)),
+                       Image.LANCZOS)
+        buf = io.BytesIO()
+        im.save(buf, 'JPEG', quality=88)
+        return buf.getvalue()
+    except Exception:
+        return raw           # أي فشل في التصغير = أرسل الأصل كما هو
 
 ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}'
 
@@ -42,7 +64,7 @@ def build_prompt(vocab=None):
     return PROMPT.format(vocab=VOCAB_TMPL.format(lists='\n'.join(lines)))
 
 
-def _call(key, model, img_bytes, timeout=120, prompt=None):
+def _call(key, model, img_bytes, timeout=300, prompt=None):
     b64 = base64.b64encode(img_bytes).decode()
     body = {
         "contents": [{"parts": [
@@ -71,7 +93,7 @@ def extract_image(key, img_path, models, vocab=None, progress=None):
     """يعيد dict {headers, rows} حيث كل خلية {v, c}. يتناوب النماذج:
     خطأ الحصة (429) ⟵ تحويل فوري للنموذج التالي بلا انتظار، ويُحفظ أنه ممتلئ للجلسة.
     أخطاء الخادم/الشبكة العابرة ⟵ محاولتان لكل نموذج بانتظار قصير."""
-    data = open(img_path, 'rb').read()
+    data = prepare_image_bytes(img_path)
     prompt = build_prompt(vocab)
     last_err = None
     queue = ([m for m in models if m not in _dead_models]
