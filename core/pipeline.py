@@ -243,14 +243,6 @@ def run(image_paths, reference_path, prev_register_path=None,
                 dt = corrections.format_ref_date(hit['date'], arabic=arabic)
                 if dt:
                     _pull('date', dt)
-        # الدائرة من المعرف (كل معرف تابع لدائرة معروفة) — إن بقيت الخلية فارغة
-        if ref and 'دائرة' in pull and 'dawira' in present:
-            if not str(out.get(CANON['dawira'], '') or '').strip():
-                dm = ref.dawira_for_moar(out.get(CANON['moar'], ''))
-                if dm:
-                    dawira, decisive = dm
-                    out[CANON['dawira']] = dawira
-                    colors[(i, CANON['dawira'])] = 'ref' if decisive else 'review'
         else:
             # ثقة Gemini
             if rc(rec, 'name') == 'low':
@@ -259,6 +251,14 @@ def run(image_paths, reference_path, prev_register_path=None,
             if pv and (len(pv) != 11 or pv[:2] != '07' or rc(rec, 'phone') == 'low'):
                 if CANON['phone'] in out:
                     colors[(i, CANON['phone'])] = 'phone_unconf'
+        # الدائرة من المعرف (كل معرف تابع لدائرة معروفة) — إن بقيت الخلية فارغة
+        if ref and 'دائرة' in pull and 'dawira' in present:
+            if not str(out.get(CANON['dawira'], '') or '').strip():
+                dm = ref.dawira_for_moar(out.get(CANON['moar'], ''))
+                if dm:
+                    dawira, decisive = dm
+                    out[CANON['dawira']] = dawira
+                    colors[(i, CANON['dawira'])] = 'ref' if decisive else 'review'
         rows.append(out)
 
     return {

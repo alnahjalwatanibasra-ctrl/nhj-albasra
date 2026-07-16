@@ -7,7 +7,8 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
 from .app import APP_DIR
 
-TITLE = 'سجلات النهج — تحالف النهج الوطني'
+VERSION = '1.1'          # ارفعه مع كل بناء exe جديد — يظهر في العنوان لتمييز النسخ
+TITLE = f'سجلات النهج — تحالف النهج الوطني (الإصدار {VERSION})'
 
 
 class MainWindow(QMainWindow):
