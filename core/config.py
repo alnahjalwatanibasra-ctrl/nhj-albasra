@@ -6,8 +6,12 @@ import json, os, sys
 # حتى يبقى ملف exe وحيداً نظيفاً على سطح المكتب بلا ملفات متناثرة حوله
 if getattr(sys, 'frozen', False):
     EXE_DIR = os.path.dirname(sys.executable)
-    APP_DIR = os.path.join(os.environ.get('APPDATA', EXE_DIR), 'سجلات النهج')
+    _roaming = os.environ.get('APPDATA', EXE_DIR)
+    APP_DIR = os.path.join(_roaming, 'Nhj-AL-Basra')
+    _old = os.path.join(_roaming, 'سجلات النهج')
     try:
+        if os.path.isdir(_old) and not os.path.isdir(APP_DIR):
+            os.rename(_old, APP_DIR)      # ترحيل بيانات الاسم القديم
         os.makedirs(APP_DIR, exist_ok=True)
     except OSError:
         APP_DIR = EXE_DIR
