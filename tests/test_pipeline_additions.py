@@ -18,10 +18,11 @@ def test_extract_honors_cancel_event(monkeypatch):
 
 
 def test_rows_carry_page_index(monkeypatch):
-    pages = [{'headers': ['اسم صاحب الكتاب'], 'rows': [{'cells': {'اسم صاحب الكتاب': {'v': 'x', 'c': 'high'}}}] * 2},
-             {'headers': ['اسم صاحب الكتاب'], 'rows': [{'cells': {'اسم صاحب الكتاب': {'v': 'y', 'c': 'high'}}}]}]
-    it = iter(pages)
+    pages = {'p1.jpg': {'headers': ['اسم صاحب الكتاب'],
+                        'rows': [{'cells': {'اسم صاحب الكتاب': {'v': 'x', 'c': 'high'}}}] * 2},
+             'p2.jpg': {'headers': ['اسم صاحب الكتاب'],
+                        'rows': [{'cells': {'اسم صاحب الكتاب': {'v': 'y', 'c': 'high'}}}]}}
     monkeypatch.setattr(pipeline.gemini_ocr, 'extract_image',
-                        lambda k, img, m, vocab=None, progress=None: next(it))
+                        lambda k, img, m, vocab=None, progress=None: pages[img])
     rows = pipeline._extract(['p1.jpg', 'p2.jpg'], 'k', ['m'], None, None)
     assert [r['_page'] for r in rows] == [0, 0, 1]

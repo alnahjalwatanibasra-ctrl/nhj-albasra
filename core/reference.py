@@ -62,6 +62,36 @@ class Reference:
                 self.rows.append({role: ws.cell(r, col).value for role, col in self.colmap.items()})
         self.by_name = [(norm(x.get('name', '')), x) for x in self.rows]
         self.moar_freq = Counter(norm(x.get('moar', '')) for x in self.rows if x.get('moar'))
+        # علاقة المعرف⟵الدائرة (كل معرف تابع لدائرة معروفة غالباً): {norm_moar: (الدائرة, نسبة الغلبة)}
+        pairs = {}
+        for x in self.rows:
+            m = norm(str(x.get('moar') or ''))
+            d = str(x.get('dawira') or '').strip()
+            if m and d:
+                pairs.setdefault(m, Counter())[d] += 1
+        self.moar_dawira = {}
+        for m, c in pairs.items():
+            top, n = c.most_common(1)[0]
+            self.moar_dawira[m] = (top, n / sum(c.values()))
+
+    def dawira_for_moar(self, moar):
+        """يستنتج الدائرة من المعرف. يعيد (الدائرة, حاسمة؟) أو None.
+        حاسمة = المعرف يتبع هذه الدائرة في ≥80% من سجلاته."""
+        m = norm(str(moar or ''))
+        if not m:
+            return None
+        hit = self.moar_dawira.get(m)
+        if hit is None:      # مطابقة ضبابية خفيفة لاختلافات الإملاء
+            best, bs = None, 0
+            for k in self.moar_dawira:
+                s = sim(m, k)
+                if s > bs:
+                    bs, best = s, k
+            if bs >= 0.85:
+                hit = self.moar_dawira[best]
+        if hit is None:
+            return None
+        return hit[0], hit[1] >= 0.8
 
     def detected_columns(self):
         return {role: 'عمود %d' % col for role, col in self.colmap.items()}

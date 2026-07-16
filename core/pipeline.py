@@ -52,13 +52,29 @@ def _extract(image_paths, key, models, progress, cache_path, vocab=None, cancel=
         if progress: progress('تحميل الاستخراج المخزّن')
         pages = _json.load(open(cache_path, encoding='utf-8'))
     else:
-        pages = []
-        for idx, img in enumerate(image_paths):
+        # الصور تُستخرج بالتوازي — زمن الدفعة ≈ زمن أبطأ صورة لا مجموعها
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        pages = [None] * len(image_paths)
+        if progress and len(image_paths) > 1:
+            progress('استخراج %d صور بالتوازي...' % len(image_paths))
+
+        def _work(idx, img):
             if cancel is not None and cancel.is_set():
                 raise CancelledError()
             if progress: progress('استخراج الصورة %d/%d' % (idx + 1, len(image_paths)))
-            res = gemini_ocr.extract_image(key, img, models, vocab=vocab, progress=progress)
-            pages.append(res)
+            return idx, gemini_ocr.extract_image(key, img, models, vocab=vocab,
+                                                 progress=progress)
+        with ThreadPoolExecutor(max_workers=min(3, max(1, len(image_paths)))) as ex:
+            futs = [ex.submit(_work, i, img) for i, img in enumerate(image_paths)]
+            done = 0
+            for f in as_completed(futs):
+                idx, res = f.result()
+                pages[idx] = res
+                done += 1
+                if progress and len(image_paths) > 1:
+                    progress('اكتملت %d من %d صور' % (done, len(image_paths)))
+        if cancel is not None and cancel.is_set():
+            raise CancelledError()
         if cache_path:
             _json.dump(pages, open(cache_path, 'w', encoding='utf-8'), ensure_ascii=False)
 
@@ -227,6 +243,14 @@ def run(image_paths, reference_path, prev_register_path=None,
                 dt = corrections.format_ref_date(hit['date'], arabic=arabic)
                 if dt:
                     _pull('date', dt)
+        # الدائرة من المعرف (كل معرف تابع لدائرة معروفة) — إن بقيت الخلية فارغة
+        if ref and 'دائرة' in pull and 'dawira' in present:
+            if not str(out.get(CANON['dawira'], '') or '').strip():
+                dm = ref.dawira_for_moar(out.get(CANON['moar'], ''))
+                if dm:
+                    dawira, decisive = dm
+                    out[CANON['dawira']] = dawira
+                    colors[(i, CANON['dawira'])] = 'ref' if decisive else 'review'
         else:
             # ثقة Gemini
             if rc(rec, 'name') == 'low':
