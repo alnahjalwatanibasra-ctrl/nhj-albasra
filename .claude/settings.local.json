@@ -41,7 +41,8 @@
       "Bash(mv \"سجلات النهج_tmp.exe\" \"سجلات النهج.exe\")",
       "Bash(rm -f \"/c/Users/ABR ALSHARQ/Desktop/سجلات النهج.exe\")",
       "Bash(python -X utf8 -c ' *)",
-      "Bash(powershell -Command 'Get-Process | Where-Object {$_.Path -like '\\\\''*Desktop*النهج*'\\\\'' -or $_.Path -like '\\\\''*Desktop*.exe'\\\\''} | Select-Object Id, StartTime, Path | Format-List')"
+      "Bash(powershell -Command 'Get-Process | Where-Object {$_.Path -like '\\\\''*Desktop*النهج*'\\\\'' -or $_.Path -like '\\\\''*Desktop*.exe'\\\\''} | Select-Object Id, StartTime, Path | Format-List')",
+      "Bash(\"./Nhj-AL-Basra.exe\")"
     ]
   }
 }

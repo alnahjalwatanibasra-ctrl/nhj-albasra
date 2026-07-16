@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt
 from .app import APP_DIR
 
 VERSION = '1.2'          # ارفعه مع كل بناء exe جديد — يظهر في العنوان لتمييز النسخ
-TITLE = f'Nhj-AL-Basra — تحالف النهج الوطني (الإصدار {VERSION})'
+TITLE = f'Nhj AL-Basra — تحالف النهج الوطني (الإصدار {VERSION})'
 
 
 class MainWindow(QMainWindow):

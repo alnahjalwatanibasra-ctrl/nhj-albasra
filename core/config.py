@@ -7,11 +7,12 @@ import json, os, sys
 if getattr(sys, 'frozen', False):
     EXE_DIR = os.path.dirname(sys.executable)
     _roaming = os.environ.get('APPDATA', EXE_DIR)
-    APP_DIR = os.path.join(_roaming, 'Nhj-AL-Basra')
-    _old = os.path.join(_roaming, 'سجلات النهج')
+    APP_DIR = os.path.join(_roaming, 'Nhj AL-Basra')
     try:
-        if os.path.isdir(_old) and not os.path.isdir(APP_DIR):
-            os.rename(_old, APP_DIR)      # ترحيل بيانات الاسم القديم
+        for _old_name in ('Nhj-AL-Basra', 'سجلات النهج'):
+            _old = os.path.join(_roaming, _old_name)
+            if os.path.isdir(_old) and not os.path.isdir(APP_DIR):
+                os.rename(_old, APP_DIR)      # ترحيل بيانات الأسماء القديمة
         os.makedirs(APP_DIR, exist_ok=True)
     except OSError:
         APP_DIR = EXE_DIR
