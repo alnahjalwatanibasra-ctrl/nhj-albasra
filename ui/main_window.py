@@ -90,6 +90,19 @@ class MainWindow(QMainWindow):
         self.review_page.changed.connect(self._autosave)
         self.review_page.phonesRequested.connect(self._open_phones)
         self.review_page.exportRequested.connect(self._do_export)
+        self.review_page.backRequested.connect(self._back_to_start)
+
+    def _back_to_start(self):
+        from PySide6.QtWidgets import QMessageBox
+        from . import session
+        if session.load(session.DEFAULT_PATH) is not None:
+            btn = QMessageBox.question(
+                self, 'عملية جديدة',
+                'المراجعة الحالية غير مصدَّرة — ستبقى محفوظة، لكنها ستُستبدل إذا أكملت استخراجاً جديداً.\n'
+                'البدء بعملية جديدة الآن؟')
+            if btn != QMessageBox.StandardButton.Yes:
+                return
+        self.stack.setCurrentWidget(self.start_page)
         self.worker = None
         self._last_images = []
 

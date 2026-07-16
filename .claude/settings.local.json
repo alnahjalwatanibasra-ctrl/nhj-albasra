@@ -35,7 +35,10 @@
       "Bash(rm -f \"/c/Users/ABR ALSHARQ/Desktop/سجل الصادر.exe\" \"/c/Users/ABR ALSHARQ/Desktop/nhj-sadir-app/dist/سجل الصادر.exe\")",
       "Bash(cp \"/c/Users/ABR ALSHARQ/Desktop/nhj-sadir-app/dist/سجلات النهج.exe\" \"/c/Users/ABR ALSHARQ/Desktop/سجلات النهج.exe\")",
       "Bash(\"./سجلات النهج.exe\")",
-      "Bash(cp \"/c/Users/ABR ALSHARQ/Desktop/PSD & AI/logo.png\" assets/logo.png)"
+      "Bash(cp \"/c/Users/ABR ALSHARQ/Desktop/PSD & AI/logo.png\" assets/logo.png)",
+      "PowerShell(ie4uinit.exe -show)",
+      "Bash(mv \"سجلات النهج.exe\" \"سجلات النهج_tmp.exe\")",
+      "Bash(mv \"سجلات النهج_tmp.exe\" \"سجلات النهج.exe\")"
     ]
   }
 }

@@ -86,3 +86,27 @@ def last_book_number(prev_xlsx_path, number_header_hints=('رقم الكتاب',
 def sequential_numbers(count, start):
     """يعيد قائمة أرقام متسلسلة تبدأ من start."""
     return [start + i for i in range(count)]
+
+
+def sequential_numbers_anchored(ocr_digits, start):
+    """ترقيم تسلسلي «مرسّى» بأرقام OCR: إن أسقط القارئ صفاً كاملاً انزاح كل
+    ما بعده بالترقيم الأعمى — هنا القفزة تُعتمد إذا أكّدها صفان مقروءان،
+    فيبقى كل صف على رقمه الحقيقي وتظهر الفجوة (دليل الصف الساقط) بدل انزياح الكل.
+    قراءة شاذة منفردة تُتجاهل. ocr_digits: خانات غربية لكل صف. start: رقم أول صف."""
+    n = len(ocr_digits)
+    offs = []
+    for i, d in enumerate(ocr_digits):
+        offs.append(int(d) - i if (d and d.isdigit() and 2 <= len(d) <= 5) else None)
+    cur = start
+    out = []
+    for i in range(n):
+        o = offs[i]
+        # صف ساقط يزيد الإزاحة بمقدار صغير موجب فقط (+1..+3)؛ الإزاحات الكبيرة
+        # أو السالبة أخطاء قراءة منهجية (٤٩٨⟵٤٩١ متتاليةً!) تُتجاهل — درس مُقاس
+        if o is not None and 0 < (o - cur) <= 3:
+            nxt = next((offs[j] for j in range(i + 1, min(i + 4, n))
+                        if offs[j] is not None), None)
+            if nxt == o:          # صفّان متتاليان يؤكدان القفزة
+                cur = o
+        out.append(cur + i)
+    return out

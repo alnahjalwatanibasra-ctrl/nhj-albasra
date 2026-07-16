@@ -72,6 +72,7 @@ def _extract(image_paths, key, models, progress, cache_path, vocab=None, cancel=
                 cell = cells.get(header, {})
                 rec[role] = (gemini_ocr.cell_value(cell), gemini_ocr.cell_conf(cell))
             rec['_page'] = pi
+            rec['_model'] = res.get('model', '')
             rows.append(rec)
     return rows
 
@@ -169,21 +170,20 @@ def run(image_paths, reference_path, prev_register_path=None,
         if hits[i] is not None and hits[i] is hits[i - 1]:
             hits[i] = None
 
-    # ترقيم متسلسل: من آخر رقم في السجل السابق، وإلا يُستنتج البدء من أرقام الصور
-    seq = None
+    # ترقيم متسلسل مرسّى بأرقام OCR (صف ساقط من القراءة = فجوة ظاهرة لا انزياح شامل)
+    ocr_nums = [corrections.to_western_digits(rv(rec, 'num')) for rec in ext]
+    start = None
     if prev_register_path:
         last = corrections.last_book_number(prev_register_path)
         if last is not None:
-            seq = corrections.sequential_numbers(len(ext), last + 1)
-    if seq is None:
-        start = corrections.infer_start_number(
-            [corrections.to_western_digits(rv(rec, 'num')) for rec in ext])
-        if start is not None:
-            seq = corrections.sequential_numbers(len(ext), start)
+            start = last + 1
+    if start is None:
+        start = corrections.infer_start_number(ocr_nums)
+    seq = corrections.sequential_numbers_anchored(ocr_nums, start) if start is not None else None
 
     # الأعمدة الظاهرة = الأدوار المكتشفة في أي صورة + الدائرة إن طُلب سحبها
     present = set()
-    for rec in ext: present |= (set(rec.keys()) - {'_page'})
+    for rec in ext: present |= (set(rec.keys()) - {'_page', '_model'})
     if 'دائرة' in pull: present.add('dawira')
     out_roles = [r for r in ROLE_ORDER if r in present]
     headers = [CANON[r] for r in out_roles]
@@ -245,4 +245,6 @@ def run(image_paths, reference_path, prev_register_path=None,
         'names': [rv(rec, 'name') for rec in ext],
         'matched': [bool(h) for h in hits],
         'row_pages': [rec.get('_page', 0) for rec in ext],
+        'models_used': sorted({rec.get('_model', '') for rec in ext} - {''}),
+        'primary_model': (models[0] if models else ''),
     }

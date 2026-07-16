@@ -38,6 +38,26 @@ def unmatched_rows(matched):
     return [i for i, m in enumerate(matched) if not m]
 
 
+def number_gaps(rows):
+    """فجوات في أرقام الكتب المتتالية = صف ساقط من القراءة على الأرجح.
+    يعيد [(قبل, بعد), ...]."""
+    gaps, prev = [], None
+    for r in rows:
+        d = to_western_digits(r.get(NUM_H, ''))
+        if d.isdigit():
+            n = int(d)
+            if prev is not None and n - prev > 1:
+                gaps.append((prev, n))
+            prev = n
+    return gaps
+
+
+def weak_models_used(result):
+    """النماذج الاحتياطية المستخدمة (غير الرئيسي) — تعني دقة أدنى تستحق تنبيه المراجع."""
+    primary = result.get('primary_model', '')
+    return [m for m in result.get('models_used', []) if m and m != primary]
+
+
 def missing_phone_rows(rows, matched):
     """صفوف بلا هاتف موثوق: فارغ، أو «لا يوجد» في صف غير مطابَق للمرجع."""
     out = []

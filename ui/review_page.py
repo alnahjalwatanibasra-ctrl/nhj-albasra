@@ -28,6 +28,7 @@ LEGEND = ('  '.join([
 class ReviewPage(QWidget):
     exportRequested = Signal()
     phonesRequested = Signal()
+    backRequested = Signal()               # عودة لشاشة البداية (عملية جديدة)
     changed = Signal()                     # لأي تعديل — يستعمله الحفظ التلقائي
 
     def __init__(self):
@@ -35,15 +36,22 @@ class ReviewPage(QWidget):
         v = QVBoxLayout(self); v.setContentsMargins(14, 10, 14, 10)
 
         bar = QHBoxLayout()
+        self.btn_back = QPushButton('عملية جديدة'); self.btn_back.setObjectName('ghost')
+        self.btn_back.clicked.connect(self.backRequested.emit)
         self.btn_phones = QPushButton('تأكيد الهواتف')
         self.btn_phones.clicked.connect(self.phonesRequested.emit)
         self.btn_image = QPushButton('عرض الصورة'); self.btn_image.setObjectName('ghost')
         self.btn_image.clicked.connect(self._show_image)
+        bar.addWidget(self.btn_back)
         bar.addWidget(self.btn_phones); bar.addWidget(self.btn_image); bar.addStretch(1)
         self.btn_export = QPushButton('تصدير Excel'); self.btn_export.setObjectName('primary')
         self.btn_export.clicked.connect(self.exportRequested.emit)
         bar.addWidget(self.btn_export)
         v.addLayout(bar)
+
+        self.lbl_quality = QLabel(); self.lbl_quality.setObjectName('warn')
+        self.lbl_quality.hide()
+        v.addWidget(self.lbl_quality)
 
         row = QHBoxLayout()
         self.lbl_unmatched = QLabel(); self.lbl_unmatched.setObjectName('warn')
@@ -87,6 +95,20 @@ class ReviewPage(QWidget):
             self._um, self._um_pos = [], -1
         n = len(result.get('phone_suggestions', []))
         self.btn_phones.setText(f'تأكيد الهواتف ({n})'); self.btn_phones.setEnabled(n > 0)
+        # تنبيهات الجودة: نموذج احتياطي و/أو فجوات أرقام (صف ساقط من القراءة)
+        notes = []
+        weak = logic.weak_models_used(result)
+        if weak:
+            notes.append('استُخدم نموذج احتياطي أضعف (%s) لامتلاء حصة الرئيسي — راجع بدقة أعلى'
+                         % '، '.join(weak))
+        gaps = logic.number_gaps(rows)
+        if gaps:
+            notes.append('فجوات في الأرقام: ' + '، '.join(
+                f'بين {a} و{b} (صف ساقط من القراءة؟ قارن بالصورة)' for a, b in gaps))
+        if notes:
+            self.lbl_quality.setText(' • '.join(notes)); self.lbl_quality.show()
+        else:
+            self.lbl_quality.hide()
         self._loading = False
 
     def current_rows(self):
