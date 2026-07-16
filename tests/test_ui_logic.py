@@ -2,12 +2,12 @@
 from ui import logic
 
 
-def test_can_start_requires_images_and_reference(tmp_path):
+def test_can_start_requires_images_reference_optional(tmp_path):
     ref = tmp_path / 'ref.xlsx'; ref.write_text('x')
     img = tmp_path / 'a.jpg'; img.write_text('x')
     ok, why = logic.can_start([], str(ref));         assert not ok and 'صور' in why
-    ok, why = logic.can_start([str(img)], '');       assert not ok and 'المرجعي' in why
-    ok, why = logic.can_start([str(img)], str(tmp_path / 'gone.xlsx')); assert not ok
+    ok, why = logic.can_start([str(img)], '');       assert ok and why == ''   # المرجعي اختياري
+    ok, why = logic.can_start([str(img)], str(tmp_path / 'gone.xlsx')); assert not ok  # مسار مفقود = خطأ
     ok, why = logic.can_start([str(img)], str(ref)); assert ok and why == ''
 
 

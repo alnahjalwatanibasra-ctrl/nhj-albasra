@@ -85,7 +85,13 @@ class ReviewPage(QWidget):
                 self.table.setItem(i, c, it)
         self.table.resizeColumnsToContents()
         um = logic.unmatched_rows(result.get('matched', []))
-        if um:
+        if not result.get('ref_columns'):
+            # لا ملف مرجعي أصلاً — رسالة مختلفة عن «صفوف لم تُطابَق»
+            self.lbl_unmatched.setText(
+                'لم يُستخدم ملف مرجعي — كل القيم من قراءة الصورة وحدها؛ راجعها بعناية')
+            self.lbl_unmatched.show(); self.btn_next_unmatched.hide()
+            self._um, self._um_pos = [], -1
+        elif um:
             self.lbl_unmatched.setText(
                 f'تنبيه: {len(um)} من الصفوف لم تُعثر في الملف المرجعي — دقّقها بعناية')
             self.lbl_unmatched.show(); self.btn_next_unmatched.show()

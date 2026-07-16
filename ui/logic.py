@@ -7,13 +7,12 @@ NUM_H, PHONE_H = 'رقم الكتاب', 'رقم الهاتف'
 
 
 def can_start(images, reference_path):
-    """هل يجوز تفعيل زر «ابدأ الاستخراج»؟ يعيد (نعم/لا، سبب التعطيل)."""
+    """هل يجوز تفعيل زر «ابدأ الاستخراج»؟ يعيد (نعم/لا، سبب التعطيل).
+    الملف المرجعي اختياري — لكن إن حُدد مسار مفقود فهو خطأ يجب تنبيه صاحبه."""
     if not images:
         return False, 'أضف صور السجل أولاً'
-    if not reference_path:
-        return False, 'اختر الملف المرجعي'
-    if not os.path.exists(reference_path):
-        return False, 'الملف المرجعي غير موجود'
+    if reference_path and not os.path.exists(reference_path):
+        return False, 'الملف المرجعي المحدد غير موجود — غيّره أو أزله'
     return True, ''
 
 

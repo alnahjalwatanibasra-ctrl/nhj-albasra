@@ -83,11 +83,12 @@ class StartPage(QWidget):
         c2 = QVBoxLayout(card2)
         self.lbl_reference = QLabel(); self.lbl_prev = QLabel(); self.lbl_word = QLabel()
         for key, lbl, title, isdir in (
-                ('reference_path', self.lbl_reference, 'الملف المرجعي', False),
+                ('reference_path', self.lbl_reference, 'الملف المرجعي (اختياري — يُنصح به بشدة)', False),
                 ('prev_register_path', self.lbl_prev, 'السجل السابق (اختياري)', False),
                 ('word_folder', self.lbl_word, 'مجلد طلبات Word (اختياري)', True)):
             r = QHBoxLayout()
-            t = QLabel(title + ':'); t.setFixedWidth(170)
+            t = QLabel(title + ':')
+            t.setMinimumWidth(240)          # عرض طبيعي بلا قصّ لأطول العناوين
             r.addWidget(t)
             r.addWidget(lbl, 1)
             b = QPushButton('تغيير'); b.setObjectName('ghost')
@@ -173,6 +174,14 @@ class StartPage(QWidget):
         self.lbl_reason.setText(why)
 
     def _emit_start(self):
+        if not self.settings.get('reference_path', ''):
+            from PySide6.QtWidgets import QMessageBox
+            btn = QMessageBox.question(
+                self, 'بدون ملف مرجعي',
+                'لم تحدد الملف المرجعي — لن تُصحَّح الأسماء والهواتف والمواضيع تلقائياً،\n'
+                'وستعتمد النتيجة على قراءة الصورة وحدها (دقة أقل بكثير).\n\nالمتابعة على أي حال؟')
+            if btn != QMessageBox.StandardButton.Yes:
+                return
         self.startRequested.emit(self.images(), {
             'reference': self.settings.get('reference_path', ''),
             'prev_register': self.settings.get('prev_register_path', '') or None,

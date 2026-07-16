@@ -10,7 +10,15 @@ RESULT = {
              {'رقم الكتاب': '٤٩٠', 'اسم صاحب الكتاب': 'غريب عن المرجع'}],
     'colors': {(0, 'اسم صاحب الكتاب'): 'ref'},
     'matched': [True, False], 'row_pages': [0, 0], 'phone_suggestions': [],
+    'ref_columns': {'name': 'عمود 2'},
 }
+
+
+def test_no_reference_banner():
+    app = create_app([])
+    page = ReviewPage()
+    page.load_result({**RESULT, 'colors': {}, 'ref_columns': {}}, images=[])
+    assert 'لم يُستخدم ملف مرجعي' in page.lbl_unmatched.text()
 
 
 def _fresh():
