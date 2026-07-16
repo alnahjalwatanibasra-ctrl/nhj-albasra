@@ -99,6 +99,7 @@ def extract_image(key, img_path, models, vocab=None, progress=None):
     queue = ([m for m in models if m not in _dead_models]
              or list(models))          # إن امتلأ الجميع جرّبها كلها مجدداً
     for model in queue:
+        quota_dead = False
         for attempt in range(2):
             try:
                 out = _call(key, model, data, prompt=prompt)
@@ -108,6 +109,7 @@ def extract_image(key, img_path, models, vocab=None, progress=None):
                 last_err = f'HTTP {e.code} ({model})'
                 if e.code == 429:
                     _dead_models.add(model)
+                    quota_dead = True
                     if progress:
                         progress('حصة النموذج %s ممتلئة — التحويل للاحتياطي' % model)
                     break              # فوراً للنموذج التالي — لا انتظار على حصة ممتلئة
@@ -118,6 +120,8 @@ def extract_image(key, img_path, models, vocab=None, progress=None):
                 last_err = str(e); time.sleep(2); continue
             except (KeyError, ValueError, json.JSONDecodeError) as e:
                 last_err = 'parse: ' + str(e); time.sleep(1); continue
+        if not quota_dead and progress:
+            progress('النموذج %s تعثّر — التحويل للتالي' % model)
     raise RuntimeError('فشل استخراج Gemini بعد عدة محاولات: ' + str(last_err))
 
 
