@@ -38,7 +38,8 @@
       "Bash(cp \"/c/Users/ABR ALSHARQ/Desktop/PSD & AI/logo.png\" assets/logo.png)",
       "PowerShell(ie4uinit.exe -show)",
       "Bash(mv \"سجلات النهج.exe\" \"سجلات النهج_tmp.exe\")",
-      "Bash(mv \"سجلات النهج_tmp.exe\" \"سجلات النهج.exe\")"
+      "Bash(mv \"سجلات النهج_tmp.exe\" \"سجلات النهج.exe\")",
+      "Bash(rm -f \"/c/Users/ABR ALSHARQ/Desktop/سجلات النهج.exe\")"
     ]
   }
 }
