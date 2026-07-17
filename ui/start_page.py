@@ -12,8 +12,9 @@ IMG_EXTS = ('.jpg', '.jpeg', '.png')
 
 
 def _step_label(n, text):
-    lbl = QLabel(f'{n}  {text}')
-    lbl.setStyleSheet('font-weight:600; color:#13908C; font-size:14px')
+    lbl = QLabel(f' {n}  {text} ')
+    lbl.setStyleSheet('font-weight:700; color:#0F7D7A; font-size:14px;'
+                      'background:#DFF1F0; border-radius:8px; padding:4px 12px;')
     return lbl
 
 
@@ -63,7 +64,7 @@ class StartPage(QWidget):
         self.settings = settings
         v = QVBoxLayout(self); v.setContentsMargins(28, 18, 28, 18); v.setSpacing(12)
 
-        v.addWidget(_step_label('①', 'صور السجل'))
+        v.addWidget(_step_label('①', 'صور السجل'), 0, Qt.AlignLeft)
         card1 = QFrame(); card1.setProperty('class', 'card')
         c1 = QVBoxLayout(card1)
         self.images_list = DropList()
@@ -78,7 +79,7 @@ class StartPage(QWidget):
         c1.addWidget(self.images_list); c1.addLayout(row); c1.addWidget(hint)
         v.addWidget(card1)
 
-        v.addWidget(_step_label('②', 'الملفات'))
+        v.addWidget(_step_label('②', 'الملفات'), 0, Qt.AlignLeft)
         card2 = QFrame(); card2.setProperty('class', 'card')
         c2 = QVBoxLayout(card2)
         self.lbl_reference = QLabel(); self.lbl_prev = QLabel(); self.lbl_word = QLabel()

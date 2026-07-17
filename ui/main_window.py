@@ -7,7 +7,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
 from .app import APP_DIR
 
-VERSION = '1.3'          # ارفعه مع كل بناء exe جديد — يظهر في العنوان لتمييز النسخ
+VERSION = '1.4'          # ارفعه مع كل بناء exe جديد — يظهر في العنوان لتمييز النسخ
 TITLE = f'Nhj AL-Basra — تحالف النهج الوطني (الإصدار {VERSION})'
 
 
@@ -61,14 +61,16 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def _topbar(self):
-        bar = QWidget(); bar.setObjectName('topbar'); bar.setFixedHeight(52)
-        h = QHBoxLayout(bar); h.setContentsMargins(14, 6, 14, 6)
+        bar = QWidget(); bar.setObjectName('topbar'); bar.setFixedHeight(58)
+        h = QHBoxLayout(bar); h.setContentsMargins(16, 6, 16, 6)
         logo = QLabel()
         pix = QPixmap(os.path.join(APP_DIR, 'assets', 'logo.png'))
         if not pix.isNull():
-            logo.setPixmap(pix.scaledToHeight(38, Qt.SmoothTransformation))
+            logo.setPixmap(pix.scaledToHeight(42, Qt.SmoothTransformation))
         h.addWidget(logo)
-        h.addWidget(QLabel(TITLE))
+        h.addWidget(QLabel('Nhj AL-Basra — تحالف النهج الوطني'))
+        ver = QLabel(f'الإصدار {VERSION}'); ver.setObjectName('version')
+        h.addWidget(ver)
         h.addStretch(1)
         self.btn_home = QToolButton(); self.btn_home.setText('⌂ الرئيسية')
         h.addWidget(self.btn_home)

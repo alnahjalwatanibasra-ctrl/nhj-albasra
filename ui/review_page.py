@@ -64,6 +64,8 @@ class ReviewPage(QWidget):
         v.addLayout(row)
 
         self.table = QTableWidget()
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(34)
         self.table.itemChanged.connect(self._on_edit)
         v.addWidget(self.table, 1)
         legend = QLabel(LEGEND); legend.setStyleSheet('color:#41494B; font-size:11px')
