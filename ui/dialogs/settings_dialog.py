@@ -30,6 +30,16 @@ class SettingsDialog(QDialog):
         v1.addWidget(b_check)
         v.addWidget(g1)
 
+        from core.version import VERSION
+        g_up = QGroupBox('التحديثات'); v_up = QVBoxLayout(g_up)
+        r_up = QHBoxLayout()
+        r_up.addWidget(QLabel(f'الإصدار الحالي: {VERSION}'), 1)
+        b_up = QPushButton('فحص التحديثات الآن'); b_up.setObjectName('ghost')
+        b_up.clicked.connect(self._check_updates)
+        r_up.addWidget(b_up)
+        v_up.addLayout(r_up)
+        v.addWidget(g_up)
+
         self.g2 = QGroupBox('متقدم (لا تغيّره إلا إذا كنت تعرف ما تفعل)')
         self.g2.setCheckable(True); self.g2.setChecked(False)
         v2 = QVBoxLayout(self.g2)
@@ -43,6 +53,10 @@ class SettingsDialog(QDialog):
         self.chk_vocab = QCheckBox('إرشاد القراءة بمفردات المرجع (مُقاس: يحسّن الدقة)')
         self.chk_vocab.setChecked(settings.get('vocab_in_prompt', True))
         v2.addWidget(self.chk_vocab)
+        v2.addWidget(QLabel('رابط التحديثات (version.json على درايف — يضبطه المسؤول):'))
+        self.txt_update = QLineEdit(settings.get('update_manifest_url', ''))
+        self.txt_update.setPlaceholderText('https://drive.google.com/file/d/...')
+        v2.addWidget(self.txt_update)
         v.addWidget(self.g2)
         v.addStretch(1)
 
@@ -78,6 +92,14 @@ class SettingsDialog(QDialog):
                    if '429' in str(e) else f'فشل الاتصال: {type(e).__name__}')
             QMessageBox.warning(self, 'الفحص', msg)
 
+    def _check_updates(self):
+        # يُحفظ الرابط أولاً إن عدّله المسؤول للتو ثم يُفحص
+        self.settings['update_manifest_url'] = self.txt_update.text().strip()
+        from core import config
+        config.save_settings(self.settings)
+        from ..update_flow import manual_check
+        manual_check(self)
+
     def _edit_replacements(self):
         from .replacements_dialog import ReplacementsDialog
         dlg = ReplacementsDialog(self.settings.get('subject_replacements', {}), self)
@@ -90,5 +112,6 @@ class SettingsDialog(QDialog):
         if models:
             self.settings['gemini_models'] = models
         self.settings['vocab_in_prompt'] = self.chk_vocab.isChecked()
+        self.settings['update_manifest_url'] = self.txt_update.text().strip()
         config.save_settings(self.settings)
         self.accept()

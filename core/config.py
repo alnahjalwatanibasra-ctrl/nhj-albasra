@@ -37,6 +37,8 @@ DEFAULTS = {
     # الحقول التي تُسحب من المرجع عند مطابقة الاسم
     "reference_pull_fields": ["هاتف", "معرف", "دائرة", "موضوع", "جهة", "تاريخ"],
     "vocab_in_prompt": True,          # حقن مفردات المرجع في prompt الاستخراج (يرشد قراءة خط اليد)
+    # رابط version.json على Google Drive — التحديث التلقائي (فارغ = الميزة معطلة)
+    "update_manifest_url": "",
     "match_threshold": 0.82,          # عتبة تشابه الاسم
     "first_token_threshold": 0.55,    # حارس الاسم الأول
     "rare_referrer_max": 4,           # المعرّف النادر يؤكّد الهوية

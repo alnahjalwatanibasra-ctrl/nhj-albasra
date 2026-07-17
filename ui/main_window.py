@@ -7,7 +7,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
 from .app import APP_DIR
 
-VERSION = '1.4'          # ارفعه مع كل بناء exe جديد — يظهر في العنوان لتمييز النسخ
+from core.version import VERSION
 TITLE = f'Nhj AL-Basra — تحالف النهج الوطني (الإصدار {VERSION})'
 
 
@@ -24,6 +24,17 @@ class MainWindow(QMainWindow):
         self._build_pages()
         self.btn_settings.clicked.connect(self._open_settings)
         self._maybe_restore_session()
+        self._silent_update_check()
+
+    def _silent_update_check(self):
+        """فحص صامت عند الإقلاع — لا يزعج إلا إذا وُجد تحديث فعلاً."""
+        url = self.settings.get('update_manifest_url', '')
+        if not url:
+            return
+        from .update_flow import CheckWorker, offer_update
+        self._upd_worker = CheckWorker(url)
+        self._upd_worker.found.connect(lambda info: offer_update(self, info))
+        self._upd_worker.start()
 
     def _open_settings(self):
         from .dialogs.settings_dialog import SettingsDialog
