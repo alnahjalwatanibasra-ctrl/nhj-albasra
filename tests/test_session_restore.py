@@ -27,5 +27,5 @@ def test_restore_declined_clears(monkeypatch):
     monkeypatch.setattr(QMessageBox, 'question',
                         staticmethod(lambda *a, **k: QMessageBox.StandardButton.No))
     win = MainWindow()
-    assert win.stack.currentWidget() is win.start_page
+    assert win.stack.currentWidget() is win.home_page   # الافتراضية الآن الشاشة الرئيسية
     assert session.load(session.DEFAULT_PATH) is None

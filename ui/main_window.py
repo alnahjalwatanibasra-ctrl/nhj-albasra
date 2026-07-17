@@ -7,7 +7,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
 from .app import APP_DIR
 
-VERSION = '1.2'          # ارفعه مع كل بناء exe جديد — يظهر في العنوان لتمييز النسخ
+VERSION = '1.3'          # ارفعه مع كل بناء exe جديد — يظهر في العنوان لتمييز النسخ
 TITLE = f'Nhj AL-Basra — تحالف النهج الوطني (الإصدار {VERSION})'
 
 
@@ -70,6 +70,8 @@ class MainWindow(QMainWindow):
         h.addWidget(logo)
         h.addWidget(QLabel(TITLE))
         h.addStretch(1)
+        self.btn_home = QToolButton(); self.btn_home.setText('⌂ الرئيسية')
+        h.addWidget(self.btn_home)
         self.btn_settings = QToolButton(); self.btn_settings.setText('الإعدادات')
         h.addWidget(self.btn_settings)
         return bar
@@ -77,12 +79,23 @@ class MainWindow(QMainWindow):
     def _build_pages(self):
         from core import config
         self.settings = config.load_settings()
+        from .home_page import HomePage
         from .start_page import StartPage
         from .progress_page import ProgressPage
+        from .text_page import TextPage
+        self.home_page = HomePage()
         self.start_page = StartPage(self.settings)
         self.progress_page = ProgressPage()
+        self.text_page = TextPage()
+        self.stack.addWidget(self.home_page)
         self.stack.addWidget(self.start_page)
         self.stack.addWidget(self.progress_page)
+        self.stack.addWidget(self.text_page)
+        self.home_page.featureRequested.connect(self._open_feature)
+        self.btn_home.clicked.connect(self._go_home)
+        self.stack.currentChanged.connect(
+            lambda _: self.btn_home.setVisible(self.stack.currentWidget() is not self.home_page))
+        self.btn_home.hide()
         from .review_page import ReviewPage
         self.review_page = ReviewPage()
         self.stack.addWidget(self.review_page)
@@ -92,6 +105,24 @@ class MainWindow(QMainWindow):
         self.review_page.phonesRequested.connect(self._open_phones)
         self.review_page.exportRequested.connect(self._do_export)
         self.review_page.backRequested.connect(self._back_to_start)
+
+    def _open_feature(self, name):
+        self.stack.setCurrentWidget(self.start_page if name == 'sadir' else self.text_page)
+
+    def _go_home(self):
+        from PySide6.QtWidgets import QMessageBox
+        from . import session
+        cur = self.stack.currentWidget()
+        if cur is self.progress_page or (cur is self.text_page and self.text_page.busy()):
+            QMessageBox.information(self, 'انتظر', 'ثمة استخراج جارٍ — أوقفه أولاً أو انتظر اكتماله.')
+            return
+        if cur is self.review_page and session.load(session.DEFAULT_PATH) is not None:
+            btn = QMessageBox.question(
+                self, 'الرئيسية',
+                'المراجعة غير مصدَّرة — ستبقى محفوظة ويُعرض استكمالها عند فتح البرنامج.\nالعودة للرئيسية؟')
+            if btn != QMessageBox.StandardButton.Yes:
+                return
+        self.stack.setCurrentWidget(self.home_page)
 
     def _back_to_start(self):
         from PySide6.QtWidgets import QMessageBox

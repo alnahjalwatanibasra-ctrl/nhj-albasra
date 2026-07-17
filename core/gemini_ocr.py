@@ -64,21 +64,30 @@ def build_prompt(vocab=None):
     return PROMPT.format(vocab=VOCAB_TMPL.format(lists='\n'.join(lines)))
 
 
-def _call(key, model, img_bytes, timeout=300, prompt=None):
+TEXT_PROMPT = '''اكتب كل النص المكتوب في هذه الصورة كما هو تماماً، سطراً بسطر بنفس ترتيب الورقة.
+- حافظ على فواصل الأسطر الأصلية.
+- إن وجدت جدولاً فاكتب كل صف من صفوفه في سطر واحد مع فاصل « | » بين الخلايا.
+- لا تضف أي شرح أو عنوان أو ترجمة أو تعليق من عندك — النص الموجود في الصورة فقط.'''
+
+
+def _call(key, model, img_bytes, timeout=300, prompt=None, mime='application/json'):
     b64 = base64.b64encode(img_bytes).decode()
+    gen = {"temperature": 0}
+    if mime:
+        gen["responseMimeType"] = mime
     body = {
         "contents": [{"parts": [
             {"text": prompt or build_prompt()},
             {"inline_data": {"mime_type": "image/jpeg", "data": b64}},
         ]}],
-        "generationConfig": {"temperature": 0, "responseMimeType": "application/json"},
+        "generationConfig": gen,
     }
     url = ENDPOINT.format(model=model, key=urllib.parse.quote(key))
     req = urllib.request.Request(url, data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
     r = json.loads(urllib.request.urlopen(req, timeout=timeout).read())
     txt = r['candidates'][0]['content']['parts'][0]['text']
-    return json.loads(txt)
+    return json.loads(txt) if mime == 'application/json' else txt
 
 
 # نماذج نفدت حصتها في هذه الجلسة — لا نعيد تجربتها مع كل صورة (كانت سبب بطء شديد)
@@ -123,6 +132,38 @@ def extract_image(key, img_path, models, vocab=None, progress=None):
         if not quota_dead and progress:
             progress('النموذج %s تعثّر — التحويل للتالي' % model)
     raise RuntimeError('فشل استخراج Gemini بعد عدة محاولات: ' + str(last_err))
+
+
+def extract_text_image(key, img_path, models, progress=None):
+    """يستخرج النص الخام من صورة (ميزة «استخراج النصوص») — نفس التناوب
+    وذاكرة النماذج الممتلئة والتصغير، لكن الرد نص حر لا JSON."""
+    data = prepare_image_bytes(img_path)
+    last_err = None
+    queue = ([m for m in models if m not in _dead_models] or list(models))
+    for model in queue:
+        quota_dead = False
+        for attempt in range(2):
+            try:
+                txt = _call(key, model, data, prompt=TEXT_PROMPT, mime=None)
+                return {'text': (txt or '').strip(), 'model': model}
+            except urllib.error.HTTPError as e:
+                last_err = f'HTTP {e.code} ({model})'
+                if e.code == 429:
+                    _dead_models.add(model)
+                    quota_dead = True
+                    if progress:
+                        progress('حصة النموذج %s ممتلئة — التحويل للاحتياطي' % model)
+                    break
+                if e.code in (500, 503):
+                    time.sleep(2); continue
+                raise
+            except (urllib.error.URLError, ConnectionResetError, OSError, TimeoutError) as e:
+                last_err = str(e); time.sleep(2); continue
+            except (KeyError, ValueError) as e:
+                last_err = 'parse: ' + str(e); time.sleep(1); continue
+        if not quota_dead and progress:
+            progress('النموذج %s تعثّر — التحويل للتالي' % model)
+    raise RuntimeError('فشل استخراج النص بعد عدة محاولات: ' + str(last_err))
 
 
 def cell_value(cell):
