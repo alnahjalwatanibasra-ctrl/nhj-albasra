@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """الشاشة الرئيسية: بطاقات الميزات — أسماء فقط بلا شرح (قرار المستخدم).
 جمالياً: هرمية عنوان + بطاقات بيضاء بظل ناعم وشريط سفلي تركوازي يتوهج ليمونياً عند المرور."""
+import os
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
                                QGraphicsDropShadowEffect)
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtCore import Qt, Signal
+from .app import APP_DIR
 
 CARD_QSS = ('QPushButton { background: #FFFFFF; color: #0F7D7A;'
             ' border: 1px solid #DCE7E6; border-bottom: 4px solid #19BBBD;'
@@ -29,6 +31,12 @@ class HomePage(QWidget):
     def __init__(self):
         super().__init__()
         v = QVBoxLayout(self); v.setAlignment(Qt.AlignCenter); v.setSpacing(10)
+        calli = QLabel(); calli.setAlignment(Qt.AlignCenter)
+        pix = QPixmap(os.path.join(APP_DIR, 'assets', 'calligraphy.png'))
+        if not pix.isNull():
+            calli.setPixmap(pix.scaledToWidth(420, Qt.SmoothTransformation))
+        v.addWidget(calli)
+        v.addSpacing(6)
         kicker = QLabel('تحالف النهج الوطني — البصرة')
         kicker.setAlignment(Qt.AlignCenter)
         kicker.setStyleSheet('font-size: 12px; color: #7FA6A4; font-weight: 600;')
