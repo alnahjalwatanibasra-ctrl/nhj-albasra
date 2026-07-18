@@ -30,19 +30,26 @@ class HomePage(QWidget):
 
     def __init__(self):
         super().__init__()
+        # خلفية تركوازية متدرّجة للشاشة الرئيسية (المخطوطة البيضاء تظهر عليها)
+        self.setObjectName('homebg')
+        self.setStyleSheet(
+            '#homebg { background: qlineargradient(x1:0, y1:0, x2:0, y2:1,'
+            ' stop:0 #159390, stop:1 #0E7B78); }')
         v = QVBoxLayout(self); v.setAlignment(Qt.AlignCenter); v.setSpacing(10)
         calli = QLabel(); calli.setAlignment(Qt.AlignCenter)
         pix = QPixmap(os.path.join(APP_DIR, 'assets', 'calligraphy.png'))
         if not pix.isNull():
-            calli.setPixmap(pix.scaledToWidth(420, Qt.SmoothTransformation))
+            calli.setPixmap(pix.scaledToWidth(440, Qt.SmoothTransformation))
         v.addWidget(calli)
         v.addSpacing(6)
         kicker = QLabel('تحالف النهج الوطني — البصرة')
         kicker.setAlignment(Qt.AlignCenter)
-        kicker.setStyleSheet('font-size: 12px; color: #7FA6A4; font-weight: 600;')
+        kicker.setStyleSheet('font-size: 12px; color: #B9E6E4; font-weight: 600;'
+                             ' background: transparent;')
         title = QLabel('ماذا تريد أن تفعل اليوم؟')
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet('font-size: 23px; color: #13908C; font-weight: 700;')
+        title.setStyleSheet('font-size: 23px; color: #FFFFFF; font-weight: 700;'
+                            ' background: transparent;')
         v.addWidget(kicker)
         v.addWidget(title)
         v.addSpacing(22)
