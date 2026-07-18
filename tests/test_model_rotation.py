@@ -14,7 +14,7 @@ def test_429_switches_immediately_and_remembers(monkeypatch, tmp_path):
     img = tmp_path / 'a.jpg'; img.write_bytes(b'x')
     calls = []
 
-    def fake_call(key, model, data, timeout=120, prompt=None):
+    def fake_call(key, model, data, timeout=120, prompt=None, mime='application/json', thinking=None):
         calls.append(model)
         if model == 'dead-model':
             raise _Resp429()
