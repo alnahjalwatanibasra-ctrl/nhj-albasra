@@ -35,9 +35,19 @@ def create_app(argv=None):
     return app
 
 
+def _close_splash():
+    """يغلق شاشة البداية (splash) الخاصة بـ PyInstaller onefile بعد جهوز النافذة."""
+    try:
+        import pyi_splash          # موجود فقط داخل exe المبني بـ --splash
+        pyi_splash.close()
+    except Exception:
+        pass
+
+
 def main():
     app = create_app()
     from .main_window import MainWindow
     win = MainWindow()
     win.show()
+    _close_splash()
     return app.exec()

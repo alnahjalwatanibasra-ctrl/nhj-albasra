@@ -16,7 +16,7 @@ notes = sys.argv[1] if len(sys.argv) > 1 else ''
 print(f'>> بناء الإصدار {VERSION} ...')
 r = subprocess.run([sys.executable, '-m', 'PyInstaller', 'run_app.py',
                     '--name', 'Nhj AL-Basra', '--onefile', '--windowed',
-                    '--icon', 'assets/logo.ico',
+                    '--icon', 'assets/logo.ico', '--splash', 'assets/splash.png',
                     '--add-data', 'assets;assets', '--add-data', 'ui/theme.qss;ui',
                     '--noconfirm', '--log-level', 'ERROR'], cwd=HERE)
 if r.returncode:

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """تصحيحات المصطلحات، الترقيم التسلسلي، وأدوات الأرقام العربية."""
-import openpyxl
+# openpyxl يُستورد داخل last_book_number فقط — تحميله عند الإقلاع كان يبطئ الفتح 1.4ث
 
 W2A = str.maketrans('0123456789', '٠١٢٣٤٥٦٧٨٩')
 A2W = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
@@ -60,6 +60,7 @@ def apply_replacements(text, replacements):
 
 def last_book_number(prev_xlsx_path, number_header_hints=('رقم الكتاب', 'رقم')):
     """يقرأ آخر رقم كتاب من ملف سجل سابق (أعلى قيمة رقمية في عمود رقم الكتاب)."""
+    import openpyxl
     try:
         wb = openpyxl.load_workbook(prev_xlsx_path, data_only=True)
         ws = wb.active
