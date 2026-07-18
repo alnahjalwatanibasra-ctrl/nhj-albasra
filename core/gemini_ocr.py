@@ -114,7 +114,8 @@ def extract_image(key, img_path, models, vocab=None, progress=None):
         quota_dead = False
         for attempt in range(2):
             try:
-                out = _call(key, model, data, prompt=prompt)
+                # بلا تفكير: مُقاس أسرع بكثير (دقائق ⟵ ~15ث) بنفس دقة القراءة
+                out = _call(key, model, data, prompt=prompt, thinking=0)
                 return {'headers': out.get('headers', []), 'rows': out.get('rows', []),
                         'model': model}
             except urllib.error.HTTPError as e:

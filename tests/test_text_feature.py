@@ -55,8 +55,8 @@ def test_extract_text_image_plain(monkeypatch, tmp_path):
     gemini_ocr.reset_dead_models()
     img = tmp_path / 'a.jpg'; img.write_bytes(b'x')
     monkeypatch.setattr(gemini_ocr, '_call',
-                        lambda k, m, d, timeout=300, prompt=None, mime='application/json':
-                        'سطر أول\nسطر ثانٍ')
+                        lambda k, m, d, timeout=300, prompt=None, mime='application/json',
+                        thinking=None: 'سطر أول\nسطر ثانٍ')
     res = gemini_ocr.extract_text_image('k', str(img), ['m1'])
     assert res['text'] == 'سطر أول\nسطر ثانٍ'
     assert res['model'] == 'm1'
