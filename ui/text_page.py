@@ -3,10 +3,17 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
                                QFileDialog, QFrame, QPlainTextEdit, QApplication,
                                QMessageBox, QListWidgetItem)
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon, QPixmap, QTextOption
 from PySide6.QtCore import Qt, QTimer
 from .start_page import DropList
 import os
+
+
+def _rtl_text_option():
+    opt = QTextOption()
+    opt.setTextDirection(Qt.RightToLeft)
+    opt.setAlignment(Qt.AlignRight)
+    return opt
 
 
 class TextPage(QWidget):
@@ -48,6 +55,9 @@ class TextPage(QWidget):
         v.addLayout(bar)
         self.txt = QPlainTextEdit(); self.txt.setReadOnly(True)
         self.txt.setPlaceholderText('النص المستخرج سيظهر هنا — حدد ما تريد بالمؤشر أو انسخ الكل')
+        # النص العربي يُحاذى لليمين ويأخذ اتجاه RTL
+        self.txt.setLayoutDirection(Qt.RightToLeft)
+        self.txt.document().setDefaultTextOption(_rtl_text_option())
         v.addWidget(self.txt, 1)
 
         self.worker = None
