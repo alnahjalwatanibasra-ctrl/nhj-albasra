@@ -20,6 +20,8 @@ else:
     EXE_DIR = APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SETTINGS_PATH = os.path.join(APP_DIR, 'settings.json')
 
+from .version import MANIFEST_URL as _DEFAULT_MANIFEST_URL
+
 DEFAULTS = {
     "gemini_key": "",
     "gemini_models": ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-flash-latest",
@@ -37,8 +39,8 @@ DEFAULTS = {
     # الحقول التي تُسحب من المرجع عند مطابقة الاسم
     "reference_pull_fields": ["هاتف", "معرف", "دائرة", "موضوع", "جهة", "تاريخ"],
     "vocab_in_prompt": True,          # حقن مفردات المرجع في prompt الاستخراج (يرشد قراءة خط اليد)
-    # رابط version.json على Google Drive — التحديث التلقائي (فارغ = الميزة معطلة)
-    "update_manifest_url": "",
+    # رابط version.json على GitHub Releases — مدمج افتراضياً فيعمل التحديث من نفسه
+    "update_manifest_url": _DEFAULT_MANIFEST_URL,
     "match_threshold": 0.82,          # عتبة تشابه الاسم
     "first_token_threshold": 0.55,    # حارس الاسم الأول
     "rare_referrer_max": 4,           # المعرّف النادر يؤكّد الهوية

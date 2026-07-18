@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
-"""يجهّز إصداراً للتوزيع: يبني الـ exe ويولّد dist/version.json.
+"""يجهّز إصداراً للتوزيع عبر GitHub Releases:
+يبني الـ exe، ينسخه باسم الأصل النظيف، ويولّد version.json الجاهز للرفع.
 الاستخدام: python make_release.py "وصف الجديد في هذا الإصدار"
-ثم ارفع الملفين على درايف بخاصية «إدارة الإصدارات» (نفس الرابطين يبقيان)."""
-import json, os, subprocess, sys
+
+بعد التشغيل ارفع الملفين في Release جديد على GitHub:
+  dist/NhjALBasra.exe   و   dist/version.json
+والرابط الثابت latest يتكفّل بالباقي — كل الأجهزة تتحدّث وحدها."""
+import json, os, shutil, subprocess, sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 HERE = os.path.dirname(os.path.abspath(__file__))
-from core.version import VERSION
-from core.config import load_settings
+from core.version import VERSION, RELEASE_ASSET, EXE_URL
 
 notes = sys.argv[1] if len(sys.argv) > 1 else ''
 print(f'>> بناء الإصدار {VERSION} ...')
@@ -19,11 +22,17 @@ r = subprocess.run([sys.executable, '-m', 'PyInstaller', 'run_app.py',
 if r.returncode:
     sys.exit('فشل البناء')
 
-# رابط تنزيل الـ exe: يقرأه من الإعدادات إن ضُبط (exe_download_url) وإلا يترك تذكيراً
-exe_url = load_settings().get('exe_download_url', 'ضع هنا رابط مشاركة الـ exe من درايف')
-manifest = {'version': VERSION, 'url': exe_url, 'notes': notes}
-mp = os.path.join(HERE, 'dist', 'version.json')
+dist = os.path.join(HERE, 'dist')
+built = os.path.join(dist, 'Nhj AL-Basra.exe')
+asset = os.path.join(dist, RELEASE_ASSET)          # نسخة بلا مسافات لأصل الـ Release
+shutil.copy2(built, asset)
+
+manifest = {'version': VERSION, 'url': EXE_URL, 'notes': notes}
+mp = os.path.join(dist, 'version.json')
 json.dump(manifest, open(mp, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
-print('>> جاهز للرفع على درايف (استبدال بنفس الملفين عبر «إدارة الإصدارات»):')
-print('   1)', os.path.join(HERE, 'dist', 'Nhj AL-Basra.exe'))
-print('   2)', mp, '\n      محتواه:', json.dumps(manifest, ensure_ascii=False))
+
+print('\n>> جاهز. أنشئ Release جديداً على GitHub وارفع فيه هذين الملفين:')
+print('   1)', asset)
+print('   2)', mp)
+print('   محتوى version.json:', json.dumps(manifest, ensure_ascii=False))
+print('\n   (سطح المكتب: انسخ "Nhj AL-Basra.exe" الأصلي — بالمسافة — للاستخدام المحلي)')

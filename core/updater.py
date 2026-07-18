@@ -14,8 +14,11 @@ def parse_ver(s):
 
 
 def gdrive_direct(url):
-    """يحوّل رابط مشاركة درايف إلى رابط تنزيل مباشر (يتخطى صفحة الفحص للملفات الكبيرة)."""
+    """يحوّل رابط المشاركة إلى رابط تنزيل مباشر.
+    روابط GitHub Releases مباشرة أصلاً فتمرّ كما هي؛ روابط درايف تُحوَّل."""
     url = str(url or '').strip()
+    if 'github.com' in url or 'githubusercontent.com' in url:
+        return url          # GitHub: رابط تنزيل نظيف مباشر
     m = (re.search(r'drive\.google\.com/file/d/([\w-]+)', url)
          or re.search(r'[?&]id=([\w-]+)', url))
     if m:
