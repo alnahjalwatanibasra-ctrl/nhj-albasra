@@ -70,11 +70,14 @@ TEXT_PROMPT = '''اكتب كل النص المكتوب في هذه الصورة 
 - لا تضف أي شرح أو عنوان أو ترجمة أو تعليق من عندك — النص الموجود في الصورة فقط.'''
 
 
-def _call(key, model, img_bytes, timeout=300, prompt=None, mime='application/json'):
+def _call(key, model, img_bytes, timeout=300, prompt=None, mime='application/json',
+          thinking=None):
     b64 = base64.b64encode(img_bytes).decode()
     gen = {"temperature": 0}
     if mime:
         gen["responseMimeType"] = mime
+    if thinking is not None:
+        gen["thinkingConfig"] = {"thinkingBudget": thinking}   # 0 = بلا تفكير (أسرع بكثير)
     body = {
         "contents": [{"parts": [
             {"text": prompt or build_prompt()},
@@ -144,7 +147,8 @@ def extract_text_image(key, img_path, models, progress=None):
         quota_dead = False
         for attempt in range(2):
             try:
-                txt = _call(key, model, data, prompt=TEXT_PROMPT, mime=None)
+                # بلا تفكير: نسخ النص لا يحتاجه، والفرق هائل (مُقاس: 210ث ⟵ 12ث)
+                txt = _call(key, model, data, prompt=TEXT_PROMPT, mime=None, thinking=0)
                 return {'text': (txt or '').strip(), 'model': model}
             except urllib.error.HTTPError as e:
                 last_err = f'HTTP {e.code} ({model})'
