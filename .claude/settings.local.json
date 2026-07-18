@@ -52,7 +52,9 @@
       "Bash(rm -f \"/c/Users/ABR ALSHARQ/Desktop/Nhj AL-Basra.exe\")",
       "Bash(cp \"dist/Nhj AL-Basra.exe\" \"/c/Users/ABR ALSHARQ/Desktop/Nhj AL-Basra.exe\")",
       "Bash(\"/c/Users/ABR ALSHARQ/Desktop/Nhj AL-Basra.exe\")",
-      "Bash(powershell -Command 'Get-Process | Where-Object {$_.MainWindowTitle -like '\\\\''*Nhj*'\\\\''} | Select-Object Id, @{N='\\\\''Startup\\(s\\)'\\\\'';E={[math]::Round\\(\\(\\(Get-Date\\)-$_.StartTime\\).TotalSeconds,1\\)}} | Format-List')"
+      "Bash(powershell -Command 'Get-Process | Where-Object {$_.MainWindowTitle -like '\\\\''*Nhj*'\\\\''} | Select-Object Id, @{N='\\\\''Startup\\(s\\)'\\\\'';E={[math]::Round\\(\\(\\(Get-Date\\)-$_.StartTime\\).TotalSeconds,1\\)}} | Format-List')",
+      "Bash(timeout 40 python -X utf8 -c ' *)",
+      "Bash(timeout 45 python -X utf8 \"C:\\\\Users\\\\ABRALS~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-ABR-ALSHARQ-Desktop-nhj-sadir-app\\\\6e28c274-5593-4bbd-bdd2-05633b635267\\\\scratchpad\\\\diag_width.py\")"
     ]
   }
 }
