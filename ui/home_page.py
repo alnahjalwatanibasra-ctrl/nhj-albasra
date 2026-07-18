@@ -31,7 +31,9 @@ class HomePage(QWidget):
     def __init__(self):
         super().__init__()
         # خلفية تركوازية متدرّجة للشاشة الرئيسية (المخطوطة البيضاء تظهر عليها)
+        # WA_StyledBackground ضروري وإلا لا يرسم QWidget خلفية التنسيق
         self.setObjectName('homebg')
+        self.setAttribute(Qt.WA_StyledBackground, True)
         self.setStyleSheet(
             '#homebg { background: qlineargradient(x1:0, y1:0, x2:0, y2:1,'
             ' stop:0 #159390, stop:1 #0E7B78); }')
