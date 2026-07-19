@@ -52,8 +52,9 @@ QListWidget::item { color: #41494B; }
 QListWidget::item:selected { background: #CDEEEF; border-radius: 6px; color: #1F2937; }
 
 QGroupBox { font-weight: 600; border: 1px solid #DCE7E6; border-radius: 10px;
-            margin-top: 12px; padding-top: 16px; background: #FFFFFF; }
-QGroupBox::title { color: #0F7D7A; subcontrol-origin: margin; right: 12px; padding: 0 4px; }
+            margin-top: 14px; padding: 18px 10px 10px 10px; background: #FFFFFF; }
+QGroupBox::title { color: #0F7D7A; subcontrol-origin: margin;
+                   subcontrol-position: top right; right: 14px; padding: 2px 6px; }
 
 QPlainTextEdit, QLineEdit { background: #FFFFFF; border: 1.5px solid #DCE7E6;
                             border-radius: 8px; padding: 8px;

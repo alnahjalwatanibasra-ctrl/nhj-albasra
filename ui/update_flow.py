@@ -83,10 +83,9 @@ def offer_update(parent, info):
 
 def manual_check(parent):
     """زر «فحص التحديثات الآن» في الإعدادات — بنتيجة معلنة دائماً."""
-    url = config.load_settings().get('update_manifest_url', '')
+    url = config.manifest_url()      # رابط GitHub المدمج دائماً (لا يعتمد على قيمة محفوظة)
     if not url:
-        QMessageBox.information(parent, 'التحديثات',
-                                'لم يُضبط رابط التحديثات بعد — يضبطه المسؤول مرة واحدة في الإعدادات المتقدمة.')
+        QMessageBox.information(parent, 'التحديثات', 'رابط التحديثات غير متاح.')
         return
     w = CheckWorker(url)
     state = {}

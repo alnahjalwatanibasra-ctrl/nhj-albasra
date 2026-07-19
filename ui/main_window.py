@@ -28,7 +28,8 @@ class MainWindow(QMainWindow):
 
     def _silent_update_check(self):
         """فحص صامت عند الإقلاع — لا يزعج إلا إذا وُجد تحديث فعلاً."""
-        url = self.settings.get('update_manifest_url', '')
+        from core import config
+        url = config.manifest_url(self.settings)   # رابط GitHub المدمج دائماً
         if not url:
             return
         from .update_flow import CheckWorker, offer_update

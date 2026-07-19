@@ -61,6 +61,17 @@ def save_settings(s):
     json.dump(s, open(SETTINGS_PATH, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
 
 
+def manifest_url(settings=None):
+    """رابط التحديثات الفعّال: تجاوز المستخدم إن وُجد، وإلا رابط GitHub المدمج.
+    لا يعتمد على القيمة المحفوظة (قد تكون فارغة في إعدادات أُنشئت قبل دمج الرابط)."""
+    settings = settings if settings is not None else load_settings()
+    override = (settings.get('update_manifest_url') or '').strip()
+    # نتجاهل رابط درايف القديم إن بقي محفوظاً — GitHub هو المصدر الآن
+    if override and 'drive.google.com/file/d/...' not in override:
+        return override
+    return _DEFAULT_MANIFEST_URL
+
+
 def get_key(settings=None):
     """المفتاح: من settings أو من ملف gemini_key.txt بجانب البرنامج."""
     settings = settings or load_settings()

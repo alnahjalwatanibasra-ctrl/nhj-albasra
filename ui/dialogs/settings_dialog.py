@@ -6,8 +6,12 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushB
                                QMessageBox, QLineEdit)
 
 
-def _mask(key):
-    return (key[:6] + '••••••••') if key else 'غير محدد'
+def _key_display(settings):
+    """يوضّح حالة المفتاح: يدوي، أو مضمّن ويعمل، أو مفقود."""
+    from core import config
+    if settings.get('gemini_key'):
+        return settings['gemini_key'][:6] + '••••••••  (يدوي)'
+    return 'مضمّن ويعمل ✓' if config.get_key(settings) else 'غير محدد'
 
 
 class SettingsDialog(QDialog):
@@ -20,7 +24,7 @@ class SettingsDialog(QDialog):
 
         g1 = QGroupBox('عام'); v1 = QVBoxLayout(g1)
         r = QHBoxLayout()
-        self.lbl_key = QLabel('مفتاح Gemini: ' + _mask(settings.get('gemini_key', '')))
+        self.lbl_key = QLabel('مفتاح Gemini: ' + _key_display(settings))
         b_key = QPushButton('تغيير'); b_key.setObjectName('ghost')
         b_key.clicked.connect(self._change_key)
         r.addWidget(self.lbl_key, 1); r.addWidget(b_key)
@@ -53,9 +57,10 @@ class SettingsDialog(QDialog):
         self.chk_vocab = QCheckBox('إرشاد القراءة بمفردات المرجع (مُقاس: يحسّن الدقة)')
         self.chk_vocab.setChecked(settings.get('vocab_in_prompt', True))
         v2.addWidget(self.chk_vocab)
-        v2.addWidget(QLabel('رابط التحديثات (version.json على درايف — يضبطه المسؤول):'))
+        from core import config
+        v2.addWidget(QLabel('رابط التحديثات (مدمج تلقائياً — اتركه فارغاً إلا لتجاوزه):'))
         self.txt_update = QLineEdit(settings.get('update_manifest_url', ''))
-        self.txt_update.setPlaceholderText('https://drive.google.com/file/d/...')
+        self.txt_update.setPlaceholderText(config.manifest_url(settings))
         v2.addWidget(self.txt_update)
         v.addWidget(self.g2)
         v.addStretch(1)
@@ -73,7 +78,7 @@ class SettingsDialog(QDialog):
                                        QLineEdit.Password)
         if ok and txt.strip():
             self.settings['gemini_key'] = txt.strip()
-            self.lbl_key.setText('مفتاح Gemini: ' + _mask(txt.strip()))
+            self.lbl_key.setText('مفتاح Gemini: ' + txt.strip()[:6] + '••••••••  (يدوي)')
 
     def _check(self):
         from core import config
