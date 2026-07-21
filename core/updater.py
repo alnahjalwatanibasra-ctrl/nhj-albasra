@@ -45,26 +45,36 @@ def check(manifest_url, current_version):
     return None
 
 
-def download(url, progress=None, timeout=120):
-    """ينزّل الـ exe الجديد إلى ملف مؤقت. progress(نسبة مئوية أو -1 إن مجهولة)."""
+def download(url, progress=None, timeout=60):
+    """ينزّل الـ exe الجديد إلى ملف مؤقت. progress(نسبة مئوية أو -1 إن مجهولة).
+    مهلة على مستوى المقبس: إن توقّف التدفّق يفشل برسالة بدل التعليق للأبد."""
+    import socket
     req = urllib.request.Request(gdrive_direct(url),
-                                 headers={'User-Agent': 'NhjALBasra-Updater'})
-    resp = urllib.request.urlopen(req, timeout=timeout)
+                                 headers={'User-Agent': 'Mozilla/5.0 NhjALBasra-Updater'})
+    resp = urllib.request.urlopen(req, timeout=timeout)   # يتبع إعادة توجيه GitHub تلقائياً
     total = int(resp.headers.get('Content-Length') or 0)
     fd, dest = tempfile.mkstemp(suffix='.exe', prefix='nhj_update_')
     done = 0
-    with os.fdopen(fd, 'wb') as f:
-        while True:
-            chunk = resp.read(256 * 1024)
-            if not chunk:
-                break
-            f.write(chunk)
-            done += len(chunk)
-            if progress:
-                progress(int(done * 100 / total) if total else -1)
-    if done < 1_000_000:        # أقل من ميغابايت = ليس exe (غالباً صفحة خطأ من درايف)
+    try:
+        with os.fdopen(fd, 'wb') as f:
+            while True:
+                try:
+                    chunk = resp.read(256 * 1024)
+                except socket.timeout:
+                    raise RuntimeError('توقّف التنزيل (الاتصال بطيء أو منقطع) — أعد المحاولة')
+                if not chunk:
+                    break
+                f.write(chunk)
+                done += len(chunk)
+                if progress:
+                    progress(int(done * 100 / total) if total else -1)
+    except Exception:
+        try: os.remove(dest)
+        except OSError: pass
+        raise
+    if done < 1_000_000:        # أقل من ميغابايت = ليس exe (غالباً صفحة خطأ)
         os.remove(dest)
-        raise RuntimeError('الملف المنزّل غير سليم — تحقق من رابط التنزيل في version.json')
+        raise RuntimeError('الملف المنزّل غير سليم — تحقق من الرابط')
     return dest
 
 
