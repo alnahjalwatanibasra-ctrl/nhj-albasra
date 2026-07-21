@@ -55,6 +55,7 @@ def download(url, progress=None, timeout=60):
     total = int(resp.headers.get('Content-Length') or 0)
     fd, dest = tempfile.mkstemp(suffix='.exe', prefix='nhj_update_')
     done = 0
+    head = b''
     try:
         with os.fdopen(fd, 'wb') as f:
             while True:
@@ -64,6 +65,8 @@ def download(url, progress=None, timeout=60):
                     raise RuntimeError('توقّف التنزيل (الاتصال بطيء أو منقطع) — أعد المحاولة')
                 if not chunk:
                     break
+                if not head:
+                    head = chunk[:2]
                 f.write(chunk)
                 done += len(chunk)
                 if progress:
@@ -72,9 +75,19 @@ def download(url, progress=None, timeout=60):
         try: os.remove(dest)
         except OSError: pass
         raise
-    if done < 1_000_000:        # أقل من ميغابايت = ليس exe (غالباً صفحة خطأ)
-        os.remove(dest)
-        raise RuntimeError('الملف المنزّل غير سليم — تحقق من الرابط')
+
+    def _bad(reason):
+        try: os.remove(dest)
+        except OSError: pass
+        raise RuntimeError(reason)
+
+    # فحوص سلامة صارمة — لا يُثبَّت ملف ناقص أو تالف مهما حدث
+    if done < 1_000_000:
+        _bad('الملف المنزّل غير سليم — تحقق من الرابط')
+    if total and done != total:
+        _bad('التنزيل غير مكتمل (%d من %d) — أعد المحاولة' % (done, total))
+    if head != b'MZ':
+        _bad('الملف المنزّل ليس برنامجاً صالحاً — أعد المحاولة')
     return dest
 
 
