@@ -57,9 +57,16 @@ def offer_update(parent, info):
     dlg.setMinimumDuration(0); dlg.setAutoClose(False)
     w = DownloadWorker(info['url'])
     state = {}
+    # ملاحظة: لا تستخدم «x or dlg.close()» — إن كان x قيمةً صحيحة لا يُنفَّذ الإغلاق (سبب التعليق)
+    def _on_done(path):
+        state['path'] = path
+        dlg.close()
+    def _on_failed(err):
+        state['err'] = err
+        dlg.close()
     w.progressed.connect(lambda p: dlg.setValue(p if p >= 0 else 0))
-    w.done.connect(lambda path: state.setdefault('path', path) or dlg.close())
-    w.failed.connect(lambda e: state.setdefault('err', e) or dlg.close())
+    w.done.connect(_on_done)
+    w.failed.connect(_on_failed)
     w.start()
     dlg.exec()
     w.wait()
