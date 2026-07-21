@@ -83,7 +83,7 @@ class HomePage(QWidget):
         v.addWidget(calli)
         v.addSpacing(14)
 
-        rule = QFrame(); rule.setFixedSize(64, 3)
+        rule = QFrame(); rule.setFixedSize(430, 3)   # بعرض المخطوطة (بطول العبارة)
         rule.setStyleSheet('background: #E6EC26; border: none; border-radius: 2px;')
         v.addWidget(rule, 0, Qt.AlignHCenter)
         v.addSpacing(14)
