@@ -9,6 +9,9 @@ on:
 permissions:
   contents: write
 
+env:
+  PYTHONUTF8: '1'          # يفرض ترميز UTF-8 لكل خطوات Python على خادم ويندوز
+
 jobs:
   build:
     runs-on: windows-latest

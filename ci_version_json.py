@@ -3,6 +3,11 @@
 core/version.py، والملاحظات من RELEASE_NOTES.txt إن وُجد. بلا مشاكل ترميز."""
 import json, os, sys
 
+try:
+    sys.stdout.reconfigure(encoding='utf-8')   # خوادم ويندوز قد لا تدعم العربية في الطباعة
+except Exception:
+    pass
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.version import VERSION, EXE_URL
 
@@ -14,4 +19,4 @@ if os.path.exists(np):
 manifest = {'version': VERSION, 'url': EXE_URL, 'notes': notes}
 with open('version.json', 'w', encoding='utf-8') as f:
     json.dump(manifest, f, ensure_ascii=False, indent=2)
-print('version.json:', json.dumps(manifest, ensure_ascii=False))
+print('version.json generated for version', VERSION)   # ASCII فقط — آمن على أي خادم
