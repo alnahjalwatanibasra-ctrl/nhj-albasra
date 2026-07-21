@@ -77,8 +77,9 @@ def offer_update(parent, info):
     except Exception as e:
         QMessageBox.warning(parent, 'التحديث', 'تعذر تثبيت التحديث: ' + str(e)[:150])
         return False
-    QApplication.instance().quit()
-    return True
+    # إنهاء فوري ليتحرّر قفل ملف الـ exe فينجح الاستبدال (quit وحده قد لا يُنهي العملية)
+    import os
+    os._exit(0)
 
 
 def manual_check(parent):

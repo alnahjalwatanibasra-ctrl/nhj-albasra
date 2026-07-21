@@ -69,21 +69,31 @@ def download(url, progress=None, timeout=120):
 
 
 def apply_and_restart(new_exe_path):
-    """يكتب سكربت استبدال ينتظر إغلاق التطبيق، يبدّل الـ exe، ويعيد تشغيله.
-    المستدعي يجب أن يغلق التطبيق فور النداء."""
+    """يكتب سكربت استبدال يعيد محاولة نسخ الـ exe الجديد حتى يتحرّر قفل الملف
+    (نسخة الملف الواحد تبقى قافلة نفسها ثانيةً بعد الإغلاق)، ثم يعيد التشغيل.
+    المستدعي يجب أن يُنهي التطبيق فوراً (os._exit) بعد النداء."""
     if not getattr(sys, 'frozen', False):
         raise RuntimeError('الاستبدال الذاتي متاح في نسخة exe فقط')
     target = sys.executable
-    pid = os.getpid()
-    bat = os.path.join(tempfile.gettempdir(), 'nhj_update_%d.bat' % pid)
+    bat = os.path.join(tempfile.gettempdir(), 'nhj_update.bat')
+    # حلقة إعادة نسخ: تنجح فور تحرّر قفل الـ exe (حتى 90 محاولة/90 ثانية)
+    script = (
+        '@echo off\r\n'
+        'set /a tries=0\r\n'
+        ':retry\r\n'
+        'copy /y "{new}" "{target}" >NUL 2>&1\r\n'
+        'if not errorlevel 1 goto done\r\n'
+        'set /a tries+=1\r\n'
+        'if %tries% geq 90 goto giveup\r\n'
+        'timeout /t 1 /nobreak >NUL\r\n'
+        'goto retry\r\n'
+        ':done\r\n'
+        'start "" "{target}"\r\n'
+        ':giveup\r\n'
+        'del /f /q "{new}" >NUL 2>&1\r\n'
+        'del /f /q "%~f0" >NUL 2>&1\r\n'
+    ).format(new=new_exe_path, target=target)
     with open(bat, 'w', encoding='utf-8') as f:
-        f.write('@echo off\nchcp 65001 >NUL\n'
-                ':wait\n'
-                'tasklist /FI "PID eq {pid}" 2>NUL | find "{pid}" >NUL '
-                '&& (timeout /t 1 /nobreak >NUL & goto wait)\n'
-                'copy /y "{new}" "{target}" >NUL\n'
-                'del /f /q "{new}" >NUL 2>&1\n'
-                'start "" "{target}"\n'
-                'del /f /q "%~f0"\n'.format(pid=pid, new=new_exe_path, target=target))
-    subprocess.Popen(['cmd', '/c', bat],
+        f.write(script)
+    subprocess.Popen(['cmd', '/c', bat], close_fds=True,
                      creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS)
