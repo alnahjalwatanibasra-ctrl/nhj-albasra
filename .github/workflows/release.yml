@@ -1,0 +1,49 @@
+name: بناء ونشر التطبيق
+
+# يعمل تلقائياً عند دفع وسم بصيغة v* (مثل v2.3) — يبني الـ exe وينشره Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: جلب الكود
+        uses: actions/checkout@v4
+
+      - name: تهيئة Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: تثبيت الاعتماديات
+        run: pip install pyside6 openpyxl pillow pyinstaller
+
+      - name: كتابة المفتاح المضمّن (من سرّ المستودع)
+        shell: bash
+        run: |
+          mkdir -p assets/keys
+          printf '%s' "${{ secrets.GEMINI_KEY }}" > assets/keys/gemini_key.txt
+
+      - name: توليد version.json
+        run: python ci_version_json.py
+
+      - name: بناء الـ exe
+        run: >
+          python -m PyInstaller run_app.py
+          --name "NhjALBasra" --onefile --windowed
+          --icon assets/logo.ico --splash assets/splash.png
+          --add-data "assets;assets" --add-data "ui/theme.qss;ui"
+          --noconfirm --log-level ERROR
+
+      - name: نشر الإصدار
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/NhjALBasra.exe
+            version.json
