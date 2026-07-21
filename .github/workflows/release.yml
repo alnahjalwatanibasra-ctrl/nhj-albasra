@@ -25,7 +25,7 @@ jobs:
           python-version: '3.12'
 
       - name: تثبيت الاعتماديات
-        run: pip install pyside6 openpyxl pillow pyinstaller
+        run: pip install pyside6 openpyxl pillow pyinstaller pywin32
 
       - name: كتابة المفتاح المضمّن (من سرّ المستودع)
         shell: bash
@@ -42,6 +42,8 @@ jobs:
           --name "NhjALBasra" --onefile --windowed
           --icon assets/logo.ico --splash assets/splash.png
           --add-data "assets;assets" --add-data "ui/theme.qss;ui"
+          --hidden-import win32com --hidden-import win32com.client
+          --hidden-import pythoncom --hidden-import pywintypes
           --noconfirm --log-level ERROR
 
       - name: نشر الإصدار

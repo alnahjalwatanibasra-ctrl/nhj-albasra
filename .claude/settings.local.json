@@ -57,7 +57,11 @@
       "Bash(timeout 45 python -X utf8 \"C:\\\\Users\\\\ABRALS~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-ABR-ALSHARQ-Desktop-nhj-sadir-app\\\\6e28c274-5593-4bbd-bdd2-05633b635267\\\\scratchpad\\\\diag_width.py\")",
       "Bash(python ci_version_json.py)",
       "Bash(rm -f version.json)",
-      "Bash(python -c \"import yaml, sys; yaml.safe_load\\(open\\('.github/workflows/release.yml', encoding='utf-8'\\)\\); print\\('صيغة YAML صحيحة'\\)\")"
+      "Bash(python -c \"import yaml, sys; yaml.safe_load\\(open\\('.github/workflows/release.yml', encoding='utf-8'\\)\\); print\\('صيغة YAML صحيحة'\\)\")",
+      "PowerShell(try { $dm = New-Object -ComObject WIA.DeviceManager; $found=$false; foreach \\($d in $dm.DeviceInfos\\) { if \\($d.Type -eq 1\\) { $found=$true; $name=\\($d.Properties | Where-Object {$_.Name -eq 'Name'}\\).Value; Write-Output \"SCANNER: $name  [ID: $\\($d.DeviceID\\)]\" } }; if \\(-not $found\\) { Write-Output \"لا يوجد سكنر ظاهر لـ WIA حالياً \\(قد يكون مطفأً أو غير متصل الآن\\)\" } } catch { Write-Output \"خطأ WIA: $\\($_.Exception.Message\\)\" })",
+      "Bash(python -c \"import win32com.client; print\\('pywin32 متوفر'\\)\")",
+      "Bash(python -m pip install pywin32 --quiet)",
+      "Bash(python -c \"import win32com.client; print\\('pywin32 مثبت الآن'\\)\")"
     ]
   }
 }

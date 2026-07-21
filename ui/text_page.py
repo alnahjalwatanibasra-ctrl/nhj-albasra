@@ -26,11 +26,13 @@ class TextPage(QWidget):
         self.images_list = DropList()
         self.images_list.filesDropped.connect(self.add_images)
         row = QHBoxLayout()
+        self.btn_scan = QPushButton('مسح ضوئي')
+        self.btn_scan.clicked.connect(self._scan)
         b_pick = QPushButton('اختيار صور...'); b_pick.setObjectName('ghost')
         b_pick.clicked.connect(self._pick)
         b_del = QPushButton('حذف المحددة'); b_del.setObjectName('danger')
         b_del.clicked.connect(self._remove_selected)
-        row.addWidget(b_pick); row.addWidget(b_del); row.addStretch(1)
+        row.addWidget(self.btn_scan); row.addWidget(b_pick); row.addWidget(b_del); row.addStretch(1)
         c.addWidget(self.images_list); c.addLayout(row)
         v.addWidget(card)
 
@@ -61,10 +63,33 @@ class TextPage(QWidget):
         v.addWidget(self.txt, 1)
 
         self.worker = None
+        self.scan_worker = None
         self._secs = 0
         self._timer = QTimer(self); self._timer.setInterval(1000)
         self._timer.timeout.connect(self._tick)
         self._refresh()
+
+    # -- المسح الضوئي --
+    def _scan(self):
+        from .scan_worker import ScanWorker
+        self.btn_scan.setEnabled(False)
+        self.lbl_status.setText('جاري المسح الضوئي...')
+        self.scan_worker = ScanWorker()
+        self.scan_worker.progressed.connect(self.lbl_status.setText)
+        self.scan_worker.scanned.connect(self._scan_done)
+        self.scan_worker.failed.connect(self._scan_failed)
+        self.scan_worker.start()
+
+    def _scan_done(self, path):
+        self.add_images([path])
+        self.lbl_status.setText('تمت إضافة الصفحة الممسوحة ✓ — امسح المزيد أو استخرج النصوص')
+        self.btn_scan.setEnabled(True)
+
+    def _scan_failed(self, msg):
+        from PySide6.QtWidgets import QMessageBox
+        self.lbl_status.setText('')
+        self.btn_scan.setEnabled(True)
+        QMessageBox.warning(self, 'المسح الضوئي', msg)
 
     # -- الصور --
     def images(self):
@@ -100,7 +125,9 @@ class TextPage(QWidget):
 
     def _refresh(self):
         busy = self.worker is not None and self.worker.isRunning()
-        self.btn_go.setEnabled(bool(self.images()) and not busy)
+        scanning = self.scan_worker is not None and self.scan_worker.isRunning()
+        self.btn_go.setEnabled(bool(self.images()) and not busy and not scanning)
+        self.btn_scan.setEnabled(not busy and not scanning)
         self.btn_copy.setEnabled(bool(self.txt.toPlainText()))
 
     # -- الاستخراج --
