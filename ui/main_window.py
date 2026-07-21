@@ -27,14 +27,34 @@ class MainWindow(QMainWindow):
         self._silent_update_check()
 
     def _silent_update_check(self):
-        """فحص صامت عند الإقلاع — لا يزعج إلا إذا وُجد تحديث فعلاً."""
+        """فحص صامت عند الإقلاع + دورياً كل نصف ساعة والبرنامج مفتوح —
+        فيصل التحديث دون الحاجة لإغلاق البرنامج وإعادة فتحه."""
+        from PySide6.QtCore import QTimer
+        self._upd_busy = False
+        self._run_update_check()
+        self._upd_timer = QTimer(self)
+        self._upd_timer.setInterval(30 * 60 * 1000)     # كل 30 دقيقة
+        self._upd_timer.timeout.connect(self._run_update_check)
+        self._upd_timer.start()
+
+    def _run_update_check(self):
         from core import config
-        url = config.manifest_url(self.settings)   # رابط GitHub المدمج دائماً
-        if not url:
+        url = config.manifest_url(self.settings)
+        if not url or self._upd_busy:
+            return
+        # لا نقاطع عملاً جارياً (استخراج/مسح) بنافذة تحديث
+        if self.stack.currentWidget() in (getattr(self, 'progress_page', None),
+                                          getattr(self, 'review_page', None)):
             return
         from .update_flow import CheckWorker, offer_update
+        self._upd_busy = True
         self._upd_worker = CheckWorker(url)
-        self._upd_worker.found.connect(lambda info: offer_update(self, info))
+        def _on_found(info):
+            self._upd_busy = False
+            offer_update(self, info)
+        self._upd_worker.found.connect(_on_found)
+        self._upd_worker.none_found.connect(lambda: setattr(self, '_upd_busy', False))
+        self._upd_worker.failed.connect(lambda e: setattr(self, '_upd_busy', False))
         self._upd_worker.start()
 
     def _open_settings(self):

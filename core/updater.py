@@ -28,9 +28,14 @@ def gdrive_direct(url):
 
 
 def fetch_manifest(manifest_url, timeout=30):
-    """يقرأ version.json — يعيد dict أو يرمي استثناء."""
-    req = urllib.request.Request(gdrive_direct(manifest_url),
-                                 headers={'User-Agent': 'NhjALBasra-Updater'})
+    """يقرأ version.json — يعيد dict أو يرمي استثناء.
+    يكسر التخزين المؤقت (طابع زمني) حتى يرى الفحص اليدوي أحدث إصدار فوراً."""
+    import time as _t
+    url = gdrive_direct(manifest_url)
+    url += ('&' if '?' in url else '?') + '_=%d' % int(_t.time())
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'NhjALBasra-Updater',
+        'Cache-Control': 'no-cache', 'Pragma': 'no-cache'})
     raw = urllib.request.urlopen(req, timeout=timeout).read()
     return json.loads(raw.decode('utf-8-sig'))
 
@@ -99,18 +104,21 @@ def apply_and_restart(new_exe_path):
         raise RuntimeError('الاستبدال الذاتي متاح في نسخة exe فقط')
     target = sys.executable
     bat = os.path.join(tempfile.gettempdir(), 'nhj_update.bat')
-    # حلقة إعادة نسخ: تنجح فور تحرّر قفل الـ exe (حتى 90 محاولة/90 ثانية)
+    # حلقة إعادة نسخ: تنجح فور تحرّر قفل الـ exe (حتى 90 محاولة/90 ثانية)،
+    # ثم تأخير استقرار قبل التشغيل (يمنع خطأ «تعذّر تحميل Python DLL» عند إعادة
+    # التشغيل الفورية — النظام/مكافح الفيروسات يحتاج ثوانيَ لإنهاء الملف الجديد).
     script = (
         '@echo off\r\n'
         'set /a tries=0\r\n'
         ':retry\r\n'
         'copy /y "{new}" "{target}" >NUL 2>&1\r\n'
-        'if not errorlevel 1 goto done\r\n'
+        'if not errorlevel 1 goto settle\r\n'
         'set /a tries+=1\r\n'
         'if %tries% geq 90 goto giveup\r\n'
         'timeout /t 1 /nobreak >NUL\r\n'
         'goto retry\r\n'
-        ':done\r\n'
+        ':settle\r\n'
+        'timeout /t 4 /nobreak >NUL\r\n'          # استقرار الملف قبل التشغيل
         'start "" "{target}"\r\n'
         ':giveup\r\n'
         'del /f /q "{new}" >NUL 2>&1\r\n'
