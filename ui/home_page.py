@@ -103,9 +103,14 @@ class HomePage(QWidget):
         row.addWidget(self.card_sadir); row.addWidget(self.card_text)
         v.addLayout(row)
 
-        foot = QLabel('تحالف النهج الوطني — البصرة')
+        foot = QLabel('تحالف النهج الوطني')
         foot.setAlignment(Qt.AlignCenter)
         foot.setStyleSheet('background: transparent; color: #AEDEDC;'
                            ' font-size: 12px; font-weight: 600;')
+        foot_city = QLabel('البصرة')
+        foot_city.setAlignment(Qt.AlignCenter)
+        foot_city.setStyleSheet('background: transparent; color: #AEDEDC;'
+                                ' font-size: 12px; font-weight: 600;')
         v.addSpacing(30)
         v.addWidget(foot)
+        v.addWidget(foot_city)
