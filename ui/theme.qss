@@ -6,10 +6,10 @@ QMainWindow, QDialog { background: #EEF3F2; }
 #topbar { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #159390, stop:1 #0E7B78); }
 #topbar QLabel { color: #FCFEFE; font-size: 16px; font-weight: 600; background: transparent; }
 #topbar QLabel#version { color: #A9DEDC; font-size: 11px; font-weight: 400; padding-top: 4px; }
-#topbar QToolButton { color: #EAF7F6; background: transparent; border: 1px solid transparent;
-                      border-radius: 8px; font-size: 13px; padding: 6px 14px; }
-#topbar QToolButton:hover { background: rgba(255, 255, 255, 0.15);
-                            border-color: rgba(255, 255, 255, 0.28); }
+#topbar QToolButton { color: #0F7D7A; background: #FFFFFF; border: 1px solid #FFFFFF;
+                      border-radius: 6px; font-size: 13px; font-weight: 600; padding: 7px 18px; }
+#topbar QToolButton:hover { background: #F0FAFA; border-color: #EAF7F6; color: #0B6663; }
+#topbar QToolButton:pressed { background: #E2F4F4; }
 
 QFrame[class="card"] { background: #FFFFFF; border: 1px solid #DCE7E6; border-radius: 12px; }
 
