@@ -10,6 +10,8 @@ QMainWindow, QDialog { background: #EEF3F2; }
                       border-radius: 6px; font-size: 13px; font-weight: 600; padding: 7px 18px; }
 #topbar QToolButton:hover { background: #F0FAFA; border-color: #EAF7F6; color: #0B6663; }
 #topbar QToolButton:pressed { background: #E2F4F4; }
+#topbar QToolButton::menu-indicator { image: none; width: 0; }
+#topbar QToolButton::down-arrow { image: none; width: 0; }
 
 QFrame[class="card"] { background: #FFFFFF; border: 1px solid #DCE7E6; border-radius: 12px; }
 

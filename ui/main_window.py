@@ -84,7 +84,7 @@ class MainWindow(QMainWindow):
         ver = QLabel(f'الإصدار {VERSION}'); ver.setObjectName('version')
         h.addWidget(ver)
         h.addStretch(1)
-        self.btn_home = QToolButton(); self.btn_home.setText('⌂ الرئيسية')
+        self.btn_home = QToolButton(); self.btn_home.setText('الرئيسية')
         h.addWidget(self.btn_home)
         self.btn_settings = QToolButton(); self.btn_settings.setText('الإعدادات')
         h.addWidget(self.btn_settings)
