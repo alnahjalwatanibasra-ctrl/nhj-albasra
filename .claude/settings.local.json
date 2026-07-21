@@ -61,7 +61,8 @@
       "PowerShell(try { $dm = New-Object -ComObject WIA.DeviceManager; $found=$false; foreach \\($d in $dm.DeviceInfos\\) { if \\($d.Type -eq 1\\) { $found=$true; $name=\\($d.Properties | Where-Object {$_.Name -eq 'Name'}\\).Value; Write-Output \"SCANNER: $name  [ID: $\\($d.DeviceID\\)]\" } }; if \\(-not $found\\) { Write-Output \"لا يوجد سكنر ظاهر لـ WIA حالياً \\(قد يكون مطفأً أو غير متصل الآن\\)\" } } catch { Write-Output \"خطأ WIA: $\\($_.Exception.Message\\)\" })",
       "Bash(python -c \"import win32com.client; print\\('pywin32 متوفر'\\)\")",
       "Bash(python -m pip install pywin32 --quiet)",
-      "Bash(python -c \"import win32com.client; print\\('pywin32 مثبت الآن'\\)\")"
+      "Bash(python -c \"import win32com.client; print\\('pywin32 مثبت الآن'\\)\")",
+      "Bash(python -c \"from ui import update_flow; print\\('import OK'\\)\")"
     ]
   }
 }

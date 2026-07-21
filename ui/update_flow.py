@@ -90,22 +90,27 @@ def offer_update(parent, info):
 
 
 def manual_check(parent):
-    """زر «فحص التحديثات الآن» في الإعدادات — بنتيجة معلنة دائماً."""
-    url = config.manifest_url()      # رابط GitHub المدمج دائماً (لا يعتمد على قيمة محفوظة)
+    """زر «فحص التحديثات الآن» — فحص متزامن مباشر (كان w.wait يجمّد استقبال رد
+    الخيط فيظنّ الفحص فاشلاً دائماً). العملية قصيرة فمؤشر انتظار يكفي."""
+    from PySide6.QtWidgets import QApplication
+    from PySide6.QtCore import Qt
+    url = config.manifest_url()
     if not url:
         QMessageBox.information(parent, 'التحديثات', 'رابط التحديثات غير متاح.')
         return
-    w = CheckWorker(url)
-    state = {}
-    w.found.connect(lambda i: state.setdefault('info', i))
-    w.none_found.connect(lambda: state.setdefault('none', True))
-    w.failed.connect(lambda e: state.setdefault('err', e))
-    w.start(); w.wait(30000)
-    if 'info' in state:
-        offer_update(parent, state['info'])
-    elif 'none' in state:
+    QApplication.setOverrideCursor(Qt.WaitCursor)
+    info, err = None, None
+    try:
+        info = updater.check(url, VERSION)
+    except Exception as e:
+        err = str(e)
+    finally:
+        QApplication.restoreOverrideCursor()
+    if err is not None:
+        QMessageBox.warning(parent, 'التحديثات',
+                            'تعذر الفحص — تحقق من الإنترنت وحاول لاحقاً.')
+    elif info:
+        offer_update(parent, info)
+    else:
         QMessageBox.information(parent, 'التحديثات',
                                 f'أنت على أحدث إصدار ({VERSION}) ✓')
-    else:
-        QMessageBox.warning(parent, 'التحديثات',
-                            'تعذر الفحص — تحقق من الإنترنت أو من رابط التحديثات.')
