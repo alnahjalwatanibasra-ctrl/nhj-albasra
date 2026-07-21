@@ -118,7 +118,11 @@ def apply_and_restart(new_exe_path):
         'timeout /t 1 /nobreak >NUL\r\n'
         'goto retry\r\n'
         ':settle\r\n'
-        'timeout /t 4 /nobreak >NUL\r\n'          # استقرار الملف قبل التشغيل
+        'timeout /t 2 /nobreak >NUL\r\n'          # استقرار الملف قبل التشغيل
+        'set "_MEIPASS2="\r\n'                     # تنظيف متغيّر التغليف المسرّب (سبب خطأ DLL)
+        'set "_PYI_APPLICATION_HOME_DIR="\r\n'
+        'set "_PYI_ARCHIVE_FILE="\r\n'
+        'set "_PYI_PARENT_PROCESS_LEVEL="\r\n'
         'start "" "{target}"\r\n'
         ':giveup\r\n'
         'del /f /q "{new}" >NUL 2>&1\r\n'
@@ -126,5 +130,8 @@ def apply_and_restart(new_exe_path):
     ).format(new=new_exe_path, target=target)
     with open(bat, 'w', encoding='utf-8') as f:
         f.write(script)
-    subprocess.Popen(['cmd', '/c', bat], close_fds=True,
+    # بيئة نظيفة: نزيل كل متغيّرات التغليف (_MEI*/_PYI*) حتى لا يرثها الـ exe الجديد
+    clean_env = {k: v for k, v in os.environ.items()
+                 if not (k.startswith('_MEI') or k.startswith('_PYI'))}
+    subprocess.Popen(['cmd', '/c', bat], close_fds=True, env=clean_env,
                      creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS)
