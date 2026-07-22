@@ -82,6 +82,8 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         from PySide6.QtWidgets import QMessageBox
         from . import session
+        if getattr(self, 'share_service', None):
+            self.share_service.stop()
         if (self.stack.currentWidget() is self.review_page
                 and session.load(session.DEFAULT_PATH) is not None):
             btn = QMessageBox.question(
@@ -121,10 +123,21 @@ class MainWindow(QMainWindow):
         self.start_page = StartPage(self.settings)
         self.progress_page = ProgressPage()
         self.text_page = TextPage()
+        from .sharing_page import SharingPage
+        from core.sharing.service import ShareService
+        from core import config
+        self.share_service = ShareService(config.APP_DIR,
+                                          lambda: config.device_name(self.settings))
+        try:
+            self.share_service.start()
+        except Exception:
+            pass
+        self.sharing_page = SharingPage(self.share_service)
         self.stack.addWidget(self.home_page)
         self.stack.addWidget(self.start_page)
         self.stack.addWidget(self.progress_page)
         self.stack.addWidget(self.text_page)
+        self.stack.addWidget(self.sharing_page)
         self.home_page.featureRequested.connect(self._open_feature)
         self.btn_home.clicked.connect(self._go_home)
         self.stack.currentChanged.connect(
@@ -141,7 +154,9 @@ class MainWindow(QMainWindow):
         self.review_page.backRequested.connect(self._back_to_start)
 
     def _open_feature(self, name):
-        self.stack.setCurrentWidget(self.start_page if name == 'sadir' else self.text_page)
+        page = {'sadir': self.start_page, 'text': self.text_page,
+                'share': self.sharing_page}.get(name, self.start_page)
+        self.stack.setCurrentWidget(page)
 
     def _go_home(self):
         from PySide6.QtWidgets import QMessageBox

@@ -98,9 +98,12 @@ class HomePage(QWidget):
         row = QHBoxLayout(); row.setSpacing(34); row.setAlignment(Qt.AlignCenter)
         self.card_sadir = FeatureCard('ic_sadir.png', 'سجل الصادر')
         self.card_text = FeatureCard('ic_text.png', 'استخراج النصوص')
+        self.card_share = FeatureCard('ic_share.png', 'مشاركة الملفات')
         self.card_sadir.clicked.connect(lambda: self.featureRequested.emit('sadir'))
         self.card_text.clicked.connect(lambda: self.featureRequested.emit('text'))
+        self.card_share.clicked.connect(lambda: self.featureRequested.emit('share'))
         row.addWidget(self.card_sadir); row.addWidget(self.card_text)
+        row.addWidget(self.card_share)
         v.addLayout(row)
 
         foot = QLabel('تحالف النهج الوطني')
