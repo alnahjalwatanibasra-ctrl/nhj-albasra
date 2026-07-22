@@ -24,6 +24,7 @@ from .version import MANIFEST_URL as _DEFAULT_MANIFEST_URL
 
 DEFAULTS = {
     "gemini_key": "",
+    "device_name": "",
     "gemini_models": ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-flash-latest",
                       "gemini-3.1-flash-lite", "gemini-flash-lite-latest"],
     "arabic_numerals": True,          # مخرجات بالأرقام العربية ٠١٢
@@ -86,3 +87,28 @@ def get_key(settings=None):
         if os.path.exists(p):
             return open(p, encoding='utf-8').read().strip()
     return ""
+
+
+def device_name(settings=None):
+    """اسم الجهاز الظاهر للأقران عند المشاركة؛ الافتراضي = اسم حاسوب ويندوز."""
+    settings = settings if settings is not None else load_settings()
+    name = (settings.get('device_name') or '').strip()
+    if name:
+        return name
+    import socket
+    return socket.gethostname() or 'مستخدم'
+
+
+def received_dir():
+    """مجلد الملفات المستلمة (يُنشأ إن لم يوجد)."""
+    d = os.path.join(APP_DIR, 'الملفات المستلمة')
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def sharing_registry_path():
+    return os.path.join(APP_DIR, 'sharing_registry.json')
+
+
+def sharing_index_cache_path():
+    return os.path.join(APP_DIR, 'sharing_index_cache.json')
