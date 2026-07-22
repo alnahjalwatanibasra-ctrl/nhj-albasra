@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""صفحة «مشاركة الملفات»: تبويبان (الوارد/الصادر مني) + منطقة سحب وإفلات.
+"""صفحة «مشاركة الملفات»: مساحة واحدة موحّدة تعرض كل الملفات (ملفاتي + ملفات
+الزملاء) كأيقونات بالاسم تحتها، وتستقبل السحب والإفلات مباشرةً.
 تعتمد على ShareService (P2P على الشبكة المحلية)."""
 import os
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-                               QTabWidget, QListWidget, QListView, QListWidgetItem,
-                               QFileDialog, QMessageBox, QFrame, QProgressDialog)
-from PySide6.QtCore import Qt, QTimer, QSize
+                               QListWidget, QListView, QListWidgetItem, QFileDialog,
+                               QMessageBox, QProgressDialog)
+from PySide6.QtCore import Qt, QTimer, QSize, Signal
 from PySide6.QtGui import QPixmap, QPainter, QColor, QFont, QIcon
-from .start_page import DropList
 from .sharing_worker import RefreshWorker, DownloadWorker
 
 _EXT_LABEL = {'xlsx': 'XLS', 'xls': 'XLS', 'docx': 'DOC', 'doc': 'DOC', 'pdf': 'PDF',
@@ -38,60 +38,84 @@ def _file_icon(t, faded=False):
     return QIcon(pm)
 
 
+class ShareGrid(QListWidget):
+    """المساحة الموحّدة: أيقونات بالاسم تحتها، وتقبل إفلات أي نوع ملف."""
+    filesDropped = Signal(list)
+
+    def __init__(self):
+        super().__init__()
+        self.setViewMode(QListView.IconMode)
+        self.setIconSize(QSize(58, 58))
+        self.setGridSize(QSize(126, 124))
+        self.setResizeMode(QListView.Adjust)
+        self.setMovement(QListView.Static)
+        self.setWordWrap(True)
+        self.setSpacing(10)
+        self.setAcceptDrops(True)
+        self.setDragDropMode(QListWidget.DropOnly)
+        self.setStyleSheet(
+            'QListWidget { background:#EAF7F5; border:2px dashed #9AD4CF;'
+            ' border-radius:12px; padding:8px; }'
+            ' QListWidget::item { color:#0B6663; }'
+            ' QListWidget::item:selected { background:#CBEBE7;'
+            ' border-radius:8px; color:#0B4F4C; }')
+
+    def dragEnterEvent(self, e):
+        if e.mimeData().hasUrls():
+            e.acceptProposedAction()
+        else:
+            super().dragEnterEvent(e)
+
+    def dragMoveEvent(self, e):
+        if e.mimeData().hasUrls():
+            e.acceptProposedAction()
+        else:
+            super().dragMoveEvent(e)
+
+    def dropEvent(self, e):
+        if e.mimeData().hasUrls():
+            paths = [u.toLocalFile() for u in e.mimeData().urls() if u.toLocalFile()]
+            if paths:
+                self.filesDropped.emit(paths)
+            e.acceptProposedAction()
+        else:
+            super().dropEvent(e)
+
+
 class SharingPage(QWidget):
     def __init__(self, service):
         super().__init__()
         self.service = service
         v = QVBoxLayout(self); v.setContentsMargins(28, 18, 28, 14); v.setSpacing(10)
 
-        hint = QLabel('شارك الملفات مباشرةً مع أجهزة المكتب على نفس الشبكة. '
-                      'أول مرة قد يسألك ويندوز عن السماح بالاتصال — اضغط «سماح».')
+        hint = QLabel('اسحب ملفات إلى المساحة لمشاركتها مع أجهزة المكتب على نفس الشبكة '
+                      '(يمكن عدّة ملفات معاً). أول مرة قد يسألك ويندوز عن السماح '
+                      'بالاتصال — اضغط «سماح».')
         hint.setWordWrap(True); hint.setStyleSheet('color:#7d8587')
         v.addWidget(hint)
 
-        card = QFrame(); card.setProperty('class', 'card')
-        c = QVBoxLayout(card)
-        self.drop = DropList()
-        self.drop.setFixedHeight(90)
-        self.drop.filesDropped.connect(self.add_files)
-        c.addWidget(QLabel('اسحب ملفات هنا لمشاركتها (يمكن عدّة ملفات معاً):'))
-        row = QHBoxLayout()
-        b_pick = QPushButton('اختيار ملفات...'); b_pick.setObjectName('ghost')
-        b_pick.clicked.connect(self._pick)
-        row.addWidget(self.drop, 1)
-        c.addLayout(row); c.addWidget(b_pick)
-        v.addWidget(card)
+        self.files_list = ShareGrid()
+        self.files_list.filesDropped.connect(self.add_files)
+        self.files_list.itemDoubleClicked.connect(self._activate)
+        self.files_list.itemSelectionChanged.connect(self._sync_buttons)
+        v.addWidget(self.files_list, 1)
 
-        self.tabs = QTabWidget()
-        self.incoming_list = QListWidget()
-        self.incoming_list.itemDoubleClicked.connect(self._download_selected)
-        self.mine_list = QListWidget()
-        for lst in (self.incoming_list, self.mine_list):
-            lst.setViewMode(QListView.IconMode)
-            lst.setIconSize(QSize(58, 58))
-            lst.setGridSize(QSize(122, 118))
-            lst.setResizeMode(QListView.Adjust)
-            lst.setMovement(QListView.Static)
-            lst.setWordWrap(True)
-            lst.setSpacing(8)
-            lst.setStyleSheet(
-                'QListWidget { background:#EAF7F5; border:none; padding:6px; }'
-                ' QListWidget::item { color:#0B6663; }'
-                ' QListWidget::item:selected { background:#CBEBE7;'
-                ' border-radius:8px; color:#0B4F4C; }')
-        self.tabs.addTab(self.incoming_list, 'المشتركة من الآخرين')
-        self.tabs.addTab(self.mine_list, 'ملفاتي المشاركة')
-        v.addWidget(self.tabs, 1)
+        self.lbl_empty = QLabel('لا توجد ملفات مشاركة بعد — اسحب ملفاتك هنا.')
+        self.lbl_empty.setAlignment(Qt.AlignCenter)
+        self.lbl_empty.setStyleSheet('color:#8aa3a1')
+        v.addWidget(self.lbl_empty)
 
         bar = QHBoxLayout()
-        b_dl = QPushButton('تنزيل المحدد'); b_dl.setObjectName('primary')
-        b_dl.clicked.connect(self._download_selected)
+        self.btn_go = QPushButton('تنزيل / فتح المحدد'); self.btn_go.setObjectName('primary')
+        self.btn_go.clicked.connect(self._activate)
+        b_pick = QPushButton('اختيار ملفات...'); b_pick.setObjectName('ghost')
+        b_pick.clicked.connect(self._pick)
         b_open = QPushButton('فتح مجلد المستلمات'); b_open.setObjectName('ghost')
-        b_open.clicked.connect(lambda: os.startfile(self.service.received)
-                               if os.path.isdir(self.service.received) else None)
-        b_rm = QPushButton('إزالة من المشاركة'); b_rm.setObjectName('danger')
-        b_rm.clicked.connect(self._remove_mine)
-        bar.addWidget(b_dl); bar.addWidget(b_open); bar.addStretch(1); bar.addWidget(b_rm)
+        b_open.clicked.connect(self._open_received)
+        self.btn_rm = QPushButton('إزالة من المشاركة'); self.btn_rm.setObjectName('danger')
+        self.btn_rm.clicked.connect(self._remove_mine)
+        bar.addWidget(self.btn_go); bar.addWidget(b_pick); bar.addWidget(b_open)
+        bar.addStretch(1); bar.addWidget(self.btn_rm)
         v.addLayout(bar)
 
         self._timer = QTimer(self); self._timer.setInterval(4000)
@@ -107,31 +131,55 @@ class SharingPage(QWidget):
         self.refresh()
 
     def _pick(self):
-        paths, _ = QFileDialog.getOpenFileNames(self, 'اختر ملفات للمشاركة', '', 'كل الملفات (*.*)')
+        paths, _ = QFileDialog.getOpenFileNames(self, 'اختر ملفات للمشاركة', '',
+                                                'كل الملفات (*.*)')
         self.add_files(paths)
 
-    def _remove_mine(self):
-        it = self.mine_list.currentItem()
-        if not it:
+    def _open_received(self):
+        if os.path.isdir(self.service.received):
+            os.startfile(self.service.received)
+
+    # -- التحديد والإجراءات --
+    def _current(self):
+        it = self.files_list.currentItem()
+        return it.data(Qt.UserRole) if it else None
+
+    def _sync_buttons(self):
+        d = self._current()
+        self.btn_go.setEnabled(d is not None)
+        self.btn_rm.setEnabled(bool(d) and d['kind'] == 'mine')
+
+    def _activate(self, *args):
+        """ملف زميل ⟵ تنزيل، وملفي ⟵ فتحه من مكانه."""
+        d = self._current()
+        if not d:
             return
-        fid = it.data(Qt.UserRole)
+        if d['kind'] == 'mine':
+            if os.path.exists(d['path']):
+                os.startfile(d['path'])
+            else:
+                QMessageBox.information(self, 'الملف مفقود',
+                                        'الأصل لم يعد موجوداً في مكانه على جهازك.')
+            return
+        self._download(d['row'])
+
+    def _remove_mine(self):
+        d = self._current()
+        if not d or d['kind'] != 'mine':
+            return
         if QMessageBox.question(self, 'إزالة',
                                 'إزالة هذا الملف من المشاركة؟ (لن يُحذف الأصل من جهازك)'
                                 ) == QMessageBox.StandardButton.Yes:
-            self.service.unshare(fid)
+            self.service.unshare(d['id'])
             self.refresh()
 
     # -- التنزيل --
-    def _download_selected(self, *args):
-        it = self.incoming_list.currentItem()
-        if not it:
-            return
-        row = it.data(Qt.UserRole)
+    def _download(self, row):
         if not row.get('peer_online') or not row.get('available'):
             QMessageBox.information(self, 'غير متاح',
                                     'هذا الملف غير متاح الآن (جهاز صاحبه مطفأ). حاول لاحقاً.')
             return
-        # لا تبدأ تنزيلاً وآخر ما زال جارياً (نفس مبدأ حماية QThread)
+        # لا تبدأ تنزيلاً وآخر ما زال جارياً (حماية QThread)
         if getattr(self, '_dw', None) is not None and self._dw.isRunning():
             return
         dlg = QProgressDialog('جاري التنزيل...', 'إلغاء', 0, 100, self)
@@ -167,32 +215,40 @@ class SharingPage(QWidget):
         else:
             self.refresh()
 
-    def refresh(self):
-        cur = self.incoming_list.currentRow()
-        self.incoming_list.clear()
-        for r in self.service.incoming():
-            if r['peer_online'] and r['available']:
-                state, faded = 'متاح', False
-            elif not r['peer_online']:
-                state, faded = 'غير متاح الآن', True
-            else:
-                state, faded = 'الأصل مفقود عند صاحبه', True
-            it = QListWidgetItem(_file_icon(r['type'], faded),
-                                 f"{r['name']}\nمن: {r['peer_name']}")
-            it.setToolTip(f"{r['name']} — من: {r['peer_name']} [{state}]")
-            it.setTextAlignment(Qt.AlignHCenter | Qt.AlignTop)
-            it.setData(Qt.UserRole, r)
-            self.incoming_list.addItem(it)
-        self.incoming_list.setCurrentRow(cur)
-        self.mine_list.clear()
+    def _rows(self):
+        """كل الملفات في مساحة واحدة: ملفاتي + ملفات الزملاء، الأحدث أولاً."""
+        rows = []
         for f in self.service.my_files():
             avail = os.path.exists(f['path'])
             dl = f.get('downloaded_by') or []
             sub = ('✔ نزّله: ' + '، '.join(dl)) if dl else (
-                'مشارَك' if avail else '⚠️ الأصل مفقود')
-            it = QListWidgetItem(_file_icon(f['type'], not avail),
-                                 f"{f['name']}\n{sub}")
-            it.setToolTip(f"{f['name']} — {sub}")
+                'منك' if avail else '⚠️ الأصل مفقود')
+            rows.append({'kind': 'mine', 'sort': f.get('shared_at', 0),
+                         'name': f['name'], 'type': f['type'], 'sub': sub,
+                         'faded': not avail, 'id': f['id'], 'path': f['path']})
+        for r in self.service.incoming():
+            if r['peer_online'] and r['available']:
+                sub, faded = f"من: {r['peer_name']}", False
+            elif not r['peer_online']:
+                sub, faded = f"من: {r['peer_name']} — غير متاح الآن", True
+            else:
+                sub, faded = f"من: {r['peer_name']} — الأصل مفقود", True
+            rows.append({'kind': 'peer', 'sort': r.get('shared_at', 0),
+                         'name': r['name'], 'type': r['type'], 'sub': sub,
+                         'faded': faded, 'row': r})
+        rows.sort(key=lambda x: x['sort'], reverse=True)
+        return rows
+
+    def refresh(self):
+        cur = self.files_list.currentRow()
+        self.files_list.clear()
+        for d in self._rows():
+            it = QListWidgetItem(_file_icon(d['type'], d['faded']),
+                                 f"{d['name']}\n{d['sub']}")
+            it.setToolTip(f"{d['name']} — {d['sub']}")
             it.setTextAlignment(Qt.AlignHCenter | Qt.AlignTop)
-            it.setData(Qt.UserRole, f['id'])
-            self.mine_list.addItem(it)
+            it.setData(Qt.UserRole, d)
+            self.files_list.addItem(it)
+        self.files_list.setCurrentRow(cur)
+        self.lbl_empty.setVisible(self.files_list.count() == 0)
+        self._sync_buttons()
