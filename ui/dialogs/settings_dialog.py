@@ -32,6 +32,13 @@ class SettingsDialog(QDialog):
         b_check = QPushButton('فحص الاتصال الآن'); b_check.setObjectName('ghost')
         b_check.clicked.connect(self._check)
         v1.addWidget(b_check)
+
+        r_dev = QHBoxLayout()
+        r_dev.addWidget(QLabel('اسمك (يظهر لزملائك عند مشاركة ملف):'))
+        self.txt_device = QLineEdit(settings.get('device_name', ''))
+        self.txt_device.setPlaceholderText('اتركه فارغاً لاستخدام اسم الحاسوب')
+        r_dev.addWidget(self.txt_device, 1)
+        v1.addLayout(r_dev)
         v.addWidget(g1)
 
         from core.version import VERSION
@@ -44,9 +51,14 @@ class SettingsDialog(QDialog):
         v_up.addLayout(r_up)
         v.addWidget(g_up)
 
-        self.g2 = QGroupBox('متقدم (لا تغيّره إلا إذا كنت تعرف ما تفعل)')
-        self.g2.setCheckable(True); self.g2.setChecked(False)
-        v2 = QVBoxLayout(self.g2)
+        self.btn_reveal = QPushButton('⚙ إظهار الإعدادات المتقدمة')
+        self.btn_reveal.setObjectName('ghost')
+        self.btn_reveal.clicked.connect(self._reveal_advanced)
+        v.addWidget(self.btn_reveal)
+
+        self.adv = QGroupBox('متقدم (لا تغيّره إلا إذا كنت تعرف ما تفعل)')
+        self.adv.setVisible(False)
+        v2 = QVBoxLayout(self.adv)
         b_rep = QPushButton('استبدالات المصطلحات...'); b_rep.setObjectName('ghost')
         b_rep.clicked.connect(self._edit_replacements)
         v2.addWidget(b_rep)
@@ -62,7 +74,7 @@ class SettingsDialog(QDialog):
         self.txt_update = QLineEdit(settings.get('update_manifest_url', ''))
         self.txt_update.setPlaceholderText(config.manifest_url(settings))
         v2.addWidget(self.txt_update)
-        v.addWidget(self.g2)
+        v.addWidget(self.adv)
         v.addStretch(1)
 
         h = QHBoxLayout(); h.addStretch(1)
@@ -111,6 +123,10 @@ class SettingsDialog(QDialog):
         if dlg.exec():
             self.settings['subject_replacements'] = dlg.values()
 
+    def _reveal_advanced(self):
+        self.adv.setVisible(True)
+        self.btn_reveal.setVisible(False)
+
     def _save(self):
         from core import config
         models = [m.strip() for m in self.txt_models.toPlainText().split('\n') if m.strip()]
@@ -118,5 +134,6 @@ class SettingsDialog(QDialog):
             self.settings['gemini_models'] = models
         self.settings['vocab_in_prompt'] = self.chk_vocab.isChecked()
         self.settings['update_manifest_url'] = self.txt_update.text().strip()
+        self.settings['device_name'] = self.txt_device.text().strip()
         config.save_settings(self.settings)
         self.accept()
