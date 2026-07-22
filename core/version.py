@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """رقم إصدار التطبيق — مصدر الحقيقة الوحيد. ارفعه مع كل بناء exe جديد."""
-VERSION = '3.7'
+VERSION = '4.0'
 
 # مستودع GitHub للتحديثات — الرابط الثابت «latest» يشير دائماً لأحدث إصدار
 GITHUB_REPO = 'alnahjalwatanibasra-ctrl/nhj-albasra'
