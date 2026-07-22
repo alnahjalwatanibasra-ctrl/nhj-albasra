@@ -53,7 +53,7 @@ class ShareService:
         """يستعلم عن فهرس كل قرين متصل ويحدّث الكاش."""
         for p in self.peers():
             try:
-                files = C.fetch_index(p['ip'], p['port'])
+                files = C.fetch_index(p['ip'], p['port'], timeout=2)
                 self.cache.put(p['id'], p['name'], files)
             except Exception:
                 pass

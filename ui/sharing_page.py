@@ -3,18 +3,39 @@
 تعتمد على ShareService (P2P على الشبكة المحلية)."""
 import os
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-                               QTabWidget, QListWidget, QListWidgetItem, QFileDialog,
-                               QMessageBox, QFrame, QProgressDialog)
-from PySide6.QtCore import Qt, QTimer
+                               QTabWidget, QListWidget, QListView, QListWidgetItem,
+                               QFileDialog, QMessageBox, QFrame, QProgressDialog)
+from PySide6.QtCore import Qt, QTimer, QSize
+from PySide6.QtGui import QPixmap, QPainter, QColor, QFont, QIcon
 from .start_page import DropList
 from .sharing_worker import RefreshWorker, DownloadWorker
 
-_ICONS = {'xlsx': '📊', 'xls': '📊', 'docx': '📝', 'doc': '📝', 'pdf': '📕',
-          'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️'}
+_EXT_LABEL = {'xlsx': 'XLS', 'xls': 'XLS', 'docx': 'DOC', 'doc': 'DOC', 'pdf': 'PDF',
+              'jpg': 'IMG', 'jpeg': 'IMG', 'png': 'IMG', 'txt': 'TXT'}
 
 
-def _icon(t):
-    return _ICONS.get((t or '').lower(), '📄')
+def _type_label(t):
+    t = (t or '').lower()
+    return _EXT_LABEL.get(t, (t[:4].upper() or 'FILE'))
+
+
+def _file_icon(t, faded=False):
+    """أيقونة نوع الملف: بطاقة تركوازية مدوّرة باختصار الامتداد (بأسلوب هوية النهج)."""
+    S = 2
+    pm = QPixmap(64 * S, 64 * S)
+    pm.fill(Qt.transparent)
+    p = QPainter(pm)
+    p.setRenderHint(QPainter.Antialiasing)
+    p.setPen(Qt.NoPen)
+    p.setBrush(QColor('#9DC3C0' if faded else '#13908C'))
+    m = 9 * S
+    p.drawRoundedRect(m, m, 64 * S - 2 * m, 64 * S - 2 * m, 11 * S, 11 * S)
+    f = QFont('Segoe UI'); f.setPixelSize(15 * S); f.setBold(True)
+    p.setFont(f)
+    p.setPen(QColor('#FFFFFF'))
+    p.drawText(pm.rect(), Qt.AlignCenter, _type_label(t))
+    p.end()
+    return QIcon(pm)
 
 
 class SharingPage(QWidget):
@@ -45,6 +66,19 @@ class SharingPage(QWidget):
         self.incoming_list = QListWidget()
         self.incoming_list.itemDoubleClicked.connect(self._download_selected)
         self.mine_list = QListWidget()
+        for lst in (self.incoming_list, self.mine_list):
+            lst.setViewMode(QListView.IconMode)
+            lst.setIconSize(QSize(58, 58))
+            lst.setGridSize(QSize(122, 118))
+            lst.setResizeMode(QListView.Adjust)
+            lst.setMovement(QListView.Static)
+            lst.setWordWrap(True)
+            lst.setSpacing(8)
+            lst.setStyleSheet(
+                'QListWidget { background:#EAF7F5; border:none; padding:6px; }'
+                ' QListWidget::item { color:#0B6663; }'
+                ' QListWidget::item:selected { background:#CBEBE7;'
+                ' border-radius:8px; color:#0B4F4C; }')
         self.tabs.addTab(self.incoming_list, 'المشتركة من الآخرين')
         self.tabs.addTab(self.mine_list, 'ملفاتي المشاركة')
         v.addWidget(self.tabs, 1)
@@ -97,6 +131,9 @@ class SharingPage(QWidget):
             QMessageBox.information(self, 'غير متاح',
                                     'هذا الملف غير متاح الآن (جهاز صاحبه مطفأ). حاول لاحقاً.')
             return
+        # لا تبدأ تنزيلاً وآخر ما زال جارياً (نفس مبدأ حماية QThread)
+        if getattr(self, '_dw', None) is not None and self._dw.isRunning():
+            return
         dlg = QProgressDialog('جاري التنزيل...', 'إلغاء', 0, 100, self)
         dlg.setWindowModality(Qt.WindowModal)
         self._dw = DownloadWorker(self.service, row)
@@ -118,6 +155,11 @@ class SharingPage(QWidget):
 
     # -- التحديث --
     def _refresh_incoming(self):
+        # لا تُنشئ عاملاً جديداً وآخر ما زال يعمل: استبدال self._rw بينما الخيط يعمل
+        # يُتلف QThread أثناء تشغيله فينهار التطبيق — ويحدث ذلك حين يتجمّد الجلب من
+        # قرين أُغلق للتوّ (جدار الحماية يُسقط الحزم) حتى المهلة. (إصلاح الإغلاق المتزامن.)
+        if getattr(self, '_rw', None) is not None and self._rw.isRunning():
+            return
         if self.service.peers():
             self._rw = RefreshWorker(self.service)
             self._rw.done.connect(self.refresh)
@@ -130,13 +172,15 @@ class SharingPage(QWidget):
         self.incoming_list.clear()
         for r in self.service.incoming():
             if r['peer_online'] and r['available']:
-                state = 'متاح'
+                state, faded = 'متاح', False
             elif not r['peer_online']:
-                state = 'غير متاح الآن'
+                state, faded = 'غير متاح الآن', True
             else:
-                state = 'الأصل مفقود عند صاحبه'
-            it = QListWidgetItem(
-                f"{_icon(r['type'])}  {r['name']}   —   من: {r['peer_name']}   [{state}]")
+                state, faded = 'الأصل مفقود عند صاحبه', True
+            it = QListWidgetItem(_file_icon(r['type'], faded),
+                                 f"{r['name']}\nمن: {r['peer_name']}")
+            it.setToolTip(f"{r['name']} — من: {r['peer_name']} [{state}]")
+            it.setTextAlignment(Qt.AlignHCenter | Qt.AlignTop)
             it.setData(Qt.UserRole, r)
             self.incoming_list.addItem(it)
         self.incoming_list.setCurrentRow(cur)
@@ -144,8 +188,11 @@ class SharingPage(QWidget):
         for f in self.service.my_files():
             avail = os.path.exists(f['path'])
             dl = f.get('downloaded_by') or []
-            note = '' if avail else '  ⚠️ الأصل مفقود'
-            recv = f'   ✔ نزّله: {"، ".join(dl)}' if dl else ''
-            it = QListWidgetItem(f"{_icon(f['type'])}  {f['name']}{recv}{note}")
+            sub = ('✔ نزّله: ' + '، '.join(dl)) if dl else (
+                'مشارَك' if avail else '⚠️ الأصل مفقود')
+            it = QListWidgetItem(_file_icon(f['type'], not avail),
+                                 f"{f['name']}\n{sub}")
+            it.setToolTip(f"{f['name']} — {sub}")
+            it.setTextAlignment(Qt.AlignHCenter | Qt.AlignTop)
             it.setData(Qt.UserRole, f['id'])
             self.mine_list.addItem(it)
