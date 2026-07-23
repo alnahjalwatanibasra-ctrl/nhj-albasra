@@ -55,6 +55,9 @@ class SettingsDialog(QDialog):
         lbl_src.setWordWrap(True)
         lbl_src.setStyleSheet('color:#8a9294; font-size:10px')
         v_up.addWidget(lbl_src)
+        b_log = QPushButton('فتح سجل التحديث'); b_log.setObjectName('ghost')
+        b_log.clicked.connect(self._open_update_log)
+        v_up.addWidget(b_log)
         v.addWidget(g_up)
 
         self.btn_reveal = QPushButton('⚙ إظهار الإعدادات المتقدمة')
@@ -128,6 +131,17 @@ class SettingsDialog(QDialog):
         dlg = ReplacementsDialog(self.settings.get('subject_replacements', {}), self)
         if dlg.exec():
             self.settings['subject_replacements'] = dlg.values()
+
+    def _open_update_log(self):
+        """يفتح سجل الفحوصات — يبيّن سبب فشل التحديث على أي جهاز."""
+        import os
+        from ..update_flow import update_log_path
+        p = update_log_path()
+        if os.path.exists(p):
+            os.startfile(p)
+        else:
+            QMessageBox.information(self, 'سجل التحديث',
+                                    'لا يوجد سجل بعد — اضغط «فحص التحديثات الآن» أولاً.')
 
     def _reveal_advanced(self):
         self.adv.setVisible(True)

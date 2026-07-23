@@ -14,17 +14,44 @@ def parse_ver(s):
     return tuple(nums)
 
 
-def fetch_manifest(manifest_url, timeout=30):
-    """يقرأ version.json — يعيد dict أو يرمي استثناء.
-    يكسر التخزين المؤقت (طابع زمني) حتى يرى الفحص اليدوي أحدث إصدار فوراً."""
-    import time as _t
-    url = str(manifest_url or '').strip()
-    url += ('&' if '?' in url else '?') + '_=%d' % int(_t.time())
+def _open_url(url, timeout, opener=None, ua='NhjALBasra-Updater'):
     req = urllib.request.Request(url, headers={
-        'User-Agent': 'NhjALBasra-Updater',
-        'Cache-Control': 'no-cache', 'Pragma': 'no-cache'})
-    raw = urllib.request.urlopen(req, timeout=timeout).read()
-    return json.loads(raw.decode('utf-8-sig'))
+        'User-Agent': ua, 'Cache-Control': 'no-cache', 'Pragma': 'no-cache'})
+    if opener is not None:
+        return opener.open(req, timeout=timeout)
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
+def fetch_manifest_verbose(manifest_url, timeout=30):
+    """يجرّب عدة مسارات للوصول للمانيفست ويعيد (البيانات، تقرير المحاولات).
+    سبب التعدّد: بيئة جهاز قد تعطّل مساراً دون آخر (بروكسي موروث، ترويسة مرفوضة،
+    تخزين وسيط). ولو فشلت كلها نُعيد سبب كل محاولة — لا رسالة عامة تُخفي العلّة."""
+    import time as _t
+    base = str(manifest_url or '').strip()
+    busted = base + (('&' if '?' in base else '?') + '_=%d' % int(_t.time()))
+    no_proxy = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    attempts = (
+        ('عادي', busted, None, 'NhjALBasra-Updater'),
+        ('بلا بروكسي', busted, no_proxy, 'NhjALBasra-Updater'),
+        ('ترويسة متصفّح', base, None, 'Mozilla/5.0'),
+        ('بلا بروكسي + متصفّح', base, no_proxy, 'Mozilla/5.0'),
+    )
+    report = []
+    for name, url, opener, ua in attempts:
+        try:
+            raw = _open_url(url, timeout, opener, ua).read()
+            data = json.loads(raw.decode('utf-8-sig'))
+            report.append('%s: نجح ✓' % name)
+            return data, '\n'.join(report)
+        except Exception as e:
+            report.append('%s: %s — %s' % (name, type(e).__name__, str(e)[:160]))
+    raise RuntimeError('فشلت كل محاولات الاتصال:\n' + '\n'.join(report))
+
+
+def fetch_manifest(manifest_url, timeout=30):
+    """يقرأ version.json — يعيد dict أو يرمي استثناء يحمل تقرير كل المحاولات."""
+    data, _report = fetch_manifest_verbose(manifest_url, timeout)
+    return data
 
 
 def check(manifest_url, current_version):

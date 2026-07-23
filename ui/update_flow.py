@@ -7,6 +7,23 @@ from core import updater, config
 from core.version import VERSION
 
 
+def log_update(line):
+    """يسجّل نتيجة كل فحص في %APPDATA%\\Nhj AL-Basra\\update_log.txt —
+    الفشل الصامت كان يخفي السبب ويجعل التشخيص عن بُعد شبه مستحيل."""
+    try:
+        import os, time
+        p = os.path.join(config.APP_DIR, 'update_log.txt')
+        with open(p, 'a', encoding='utf-8') as f:
+            f.write('[%s] %s\n' % (time.strftime('%Y-%m-%d %H:%M:%S'), line))
+    except Exception:
+        pass
+
+
+def update_log_path():
+    import os
+    return os.path.join(config.APP_DIR, 'update_log.txt')
+
+
 class CheckWorker(QThread):
     found = Signal(dict)
     none_found = Signal()
@@ -107,13 +124,22 @@ def manual_check(parent):
     finally:
         QApplication.restoreOverrideCursor()
     if err is not None:
-        # نُظهر المصدر المستعمل: فشل صامت بسبب رابط قديم محفوظ كان يمنع التحديث
-        # على أجهزة المكتب دون أي مؤشّر على السبب
-        QMessageBox.warning(parent, 'التحديثات',
-                            'تعذر الفحص — تحقق من الإنترنت وحاول لاحقاً.\n\n'
-                            f'مصدر التحديث المستعمل:\n{url}')
+        # نُظهر الخطأ الحقيقي وتقرير كل محاولة — الرسالة العامة السابقة
+        # («تحقق من الإنترنت») كانت تُخفي السبب فيستحيل التشخيص
+        log_update('فشل الفحص | المصدر: %s | %s' % (url, err.replace('\n', ' | ')))
+        box = QMessageBox(parent)
+        box.setIcon(QMessageBox.Warning)
+        box.setWindowTitle('التحديثات')
+        box.setText('تعذّر فحص التحديثات.')
+        box.setInformativeText('اضغط «Show Details» لعرض السبب الدقيق، '
+                               'وأرسله للمطوّر إن تكرّر.')
+        box.setDetailedText('مصدر التحديث:\n%s\n\nالتفاصيل:\n%s\n\nسجل الفحص:\n%s'
+                            % (url, err, update_log_path()))
+        box.exec()
     elif info:
+        log_update('وُجد إصدار أحدث: %s (الحالي %s)' % (info['version'], VERSION))
         offer_update(parent, info)
     else:
+        log_update('الفحص ناجح — أحدث إصدار (%s)' % VERSION)
         QMessageBox.information(parent, 'التحديثات',
                                 f'أنت على أحدث إصدار ({VERSION}) ✓')

@@ -52,9 +52,21 @@ class MainWindow(QMainWindow):
         def _on_found(info):
             self._upd_busy = False
             offer_update(self, info)
+        from .update_flow import log_update
         self._upd_worker.found.connect(_on_found)
-        self._upd_worker.none_found.connect(lambda: setattr(self, '_upd_busy', False))
-        self._upd_worker.failed.connect(lambda e: setattr(self, '_upd_busy', False))
+
+        def _on_none():
+            self._upd_busy = False
+            log_update('الفحص الصامت: لا يوجد أحدث')
+
+        def _on_failed(e):
+            self._upd_busy = False
+            # كان يُبتلع بصمت تام — الآن يُسجَّل ليمكن تشخيصه لاحقاً
+            log_update('الفحص الصامت فشل | المصدر: %s | %s'
+                       % (url, str(e).replace('\n', ' | ')))
+
+        self._upd_worker.none_found.connect(_on_none)
+        self._upd_worker.failed.connect(_on_failed)
         self._upd_worker.start()
 
     def _open_settings(self):
