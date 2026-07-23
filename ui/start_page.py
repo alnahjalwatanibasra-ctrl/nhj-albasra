@@ -76,7 +76,14 @@ class StartPage(QWidget):
         btn_del.clicked.connect(self._remove_selected)
         row = QHBoxLayout(); row.addWidget(btn_pick); row.addWidget(btn_del); row.addStretch(1)
         hint = QLabel(HINT); hint.setStyleSheet('color:#8a9294; font-size:11px')
+        # تنبيه جودة: صور واتساب المضغوطة تُضعف قراءة خط اليد — نُنبّه قبل استهلاك الحصة
+        self.lbl_quality = QLabel(); self.lbl_quality.setWordWrap(True)
+        self.lbl_quality.setStyleSheet(
+            'color:#8a5a00; background:#FFF4D6; border:1px solid #F0D89A;'
+            ' border-radius:6px; padding:6px; font-size:11px')
+        self.lbl_quality.hide()
         c1.addWidget(self.images_list); c1.addLayout(row); c1.addWidget(hint)
+        c1.addWidget(self.lbl_quality)
         v.addWidget(card1)
 
         v.addWidget(_step_label('②', 'الملفات'), 0, Qt.AlignLeft)
@@ -127,14 +134,32 @@ class StartPage(QWidget):
                 it = QListWidgetItem(icon, os.path.basename(p)[:16])
                 it.setData(Qt.UserRole, p)
                 self.images_list.addItem(it)
+        self._check_quality()
         self._refresh()
 
+    def _check_quality(self):
+        """ينبّه على الصور المضغوطة (واتساب) قبل بدء الاستخراج."""
+        from core.gemini_ocr import low_res_images, LOW_RES_SIDE
+        low = low_res_images(self.images())
+        if not low:
+            self.lbl_quality.hide()
+            return
+        names = '، '.join(f'{n} ({w}×{h})' for n, w, h in low[:3])
+        more = f' و{len(low) - 3} غيرها' if len(low) > 3 else ''
+        self.lbl_quality.setText(
+            f'⚠️ صور منخفضة الدقة: {names}{more}.\n'
+            'الصور المضغوطة (من واتساب) تُضعف قراءة خط اليد وتزيد التصحيح اليدوي. '
+            'الأفضل: أرسلها في واتساب كـ«ملف/مستند» بدل «صورة»، أو صوّرها بدقّة الكاميرا الكاملة '
+            f'(يُفضَّل أن يزيد أكبر ضلع عن {LOW_RES_SIDE} بكسل).')
+        self.lbl_quality.show()
+
     def remove_image(self, idx):
-        self.images_list.takeItem(idx); self._refresh()
+        self.images_list.takeItem(idx); self._check_quality(); self._refresh()
 
     def _remove_selected(self):
         for it in self.images_list.selectedItems():
             self.images_list.takeItem(self.images_list.row(it))
+        self._check_quality()
         self._refresh()
 
     def _pick_images(self):

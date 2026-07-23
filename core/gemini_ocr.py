@@ -3,26 +3,97 @@
 import urllib.request, urllib.parse, json, base64, time, io
 
 MAX_SIDE = 2200      # صور الكاميرا الضخمة تُبطئ الرفع وتُسقط المهلة — التصغير لا يضر خط اليد
+LOW_RES_SIDE = 1600  # أقل من هذا = صورة مضغوطة (واتساب) تُضعف قراءة خط اليد
+# لا نعدّل ميلاناً أقل من هذا: صور المستخدم الحالية ميلانها ≤ 1° والتدوير العبثي يضرّ
+DESKEW_MIN_ANGLE = 1.5
+DESKEW_MAX_ANGLE = 8.0
+
+
+def detect_skew(im, max_angle=DESKEW_MAX_ANGLE, step=0.5):
+    """زاوية ميلان الجدول بالدرجات (موجب = يحتاج تدويراً عكس عقارب الساعة).
+    الطريقة: أحدّ إسقاط أفقي — الخطوط الأفقية للجدول تعطي أعلى تباين عند الزاوية الصحيحة."""
+    try:
+        import numpy as np
+        from PIL import Image
+        g = im.convert('L')
+        if g.width > 700:
+            g = g.resize((700, round(g.height * 700 / g.width)), Image.BILINEAR)
+        a = np.asarray(g, dtype=np.float32)
+        binary = ((a < (a.mean() - a.std() * 0.5)) * 255).astype('uint8')
+        if binary.max() == 0:          # صورة بلا محتوى داكن ⟵ لا ميلان يُقاس
+            return 0.0
+        src = Image.fromarray(binary)
+
+        def score_at(deg):
+            rot = src.rotate(deg, resample=Image.BILINEAR, fillcolor=0)
+            proj = np.asarray(rot, dtype=np.float32).sum(axis=1)
+            return float(np.var(np.diff(proj)))
+
+        # الصفر هو المرجع: لا نغادره إلا لتحسّن معتبر — الأمان أهم من تصحيح ميلان طفيف
+        best, best_score = 0.0, score_at(0.0)
+        ang = -max_angle
+        while ang <= max_angle + 1e-9:
+            if abs(ang) > 1e-9:
+                s = score_at(ang)
+                if s > best_score * 1.02:
+                    best, best_score = float(ang), s
+            ang += step
+        return best
+    except Exception:
+        return 0.0           # أي فشل = لا تدوير
 
 
 def prepare_image_bytes(img_path):
-    """يصغّر الصور الأكبر من MAX_SIDE قبل الإرسال (JPEG جودة 88).
-    صورة كاميرا 4000px/8MB ⟵ ~2200px/أقل من 1MB: رفع أسرع بكثير وبلا فقد قراءة."""
+    """يهيّئ الصورة قبل الإرسال: دوران EXIF ⟵ تعديل ميلان واضح ⟵ تصغير الضخمة.
+    الصورة السليمة تُرسل كما هي بلا إعادة ترميز (حفاظاً على الجودة والسلوك المُتحقَّق منه)."""
     raw = open(img_path, 'rb').read()
     try:
-        from PIL import Image
+        from PIL import Image, ImageOps
         im = Image.open(io.BytesIO(raw))
-        if max(im.size) <= MAX_SIDE:
+        changed = False
+
+        # 1) دوران EXIF: صور الهاتف المُدارة كان تُرسل مقلوبة فتضعف قراءتها
+        if (im.getexif() or {}).get(274) not in (None, 1):
+            im = ImageOps.exif_transpose(im)
+            changed = True
+
+        # 2) ميلان واضح فقط (≥ DESKEW_MIN_ANGLE) — لا نلمس الصور شبه المستقيمة
+        angle = detect_skew(im)
+        if DESKEW_MIN_ANGLE <= abs(angle) <= DESKEW_MAX_ANGLE:
+            im = im.convert('RGB').rotate(angle, resample=Image.BICUBIC,
+                                          expand=True, fillcolor=(255, 255, 255))
+            changed = True
+
+        # 3) تصغير الضخمة
+        if max(im.size) > MAX_SIDE:
+            ratio = MAX_SIDE / max(im.size)
+            im = im.convert('RGB').resize(
+                (round(im.width * ratio), round(im.height * ratio)), Image.LANCZOS)
+            changed = True
+
+        if not changed:
             return raw
-        im = im.convert('RGB')
-        ratio = MAX_SIDE / max(im.size)
-        im = im.resize((round(im.width * ratio), round(im.height * ratio)),
-                       Image.LANCZOS)
         buf = io.BytesIO()
-        im.save(buf, 'JPEG', quality=88)
+        im.convert('RGB').save(buf, 'JPEG', quality=88)
         return buf.getvalue()
     except Exception:
-        return raw           # أي فشل في التصغير = أرسل الأصل كما هو
+        return raw           # أي فشل في التهيئة = أرسل الأصل كما هو
+
+
+def low_res_images(paths):
+    """يعيد [(اسم الملف، العرض، الارتفاع)] للصور المضغوطة (أقل من LOW_RES_SIDE).
+    صور واتساب (1280×960) تُضعف قراءة خط اليد — الإرسال كـ«ملف» يتجنّب الضغط."""
+    import os
+    out = []
+    for p in paths or []:
+        try:
+            from PIL import Image, ImageOps
+            im = ImageOps.exif_transpose(Image.open(p))
+            if max(im.size) < LOW_RES_SIDE:
+                out.append((os.path.basename(p), im.width, im.height))
+        except Exception:
+            pass
+    return out
 
 ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}'
 

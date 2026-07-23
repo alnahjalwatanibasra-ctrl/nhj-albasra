@@ -167,17 +167,53 @@ class ReviewPage(QWidget):
         if self.table.item(r, 0):
             self.table.scrollToItem(self.table.item(r, 0))
 
+    # نموذج موضع الصف: الصفوف متساوية الارتفاع، والجدول يشغل هذا النطاق من الصورة
+    ROW_BAND_TOP, ROW_BAND_BOTTOM = 0.10, 0.98
+
+    def row_band(self, row, height):
+        """يعيد (أعلى، ارتفاع) الشريط التقريبي للصف داخل صورة صفحته.
+        تقدير لأن الاستخراج لا يعيد إحداثيات — لكنه يكفي لتوجيه العين بسرعة."""
+        pages = (self.result or {}).get('row_pages') or [0] * self.table.rowCount()
+        pg = pages[row] if row < len(pages) else 0
+        same = [i for i, p in enumerate(pages) if p == pg]
+        k = same.index(row) if row in same else 0
+        n = max(len(same), 1)
+        span = height * (self.ROW_BAND_BOTTOM - self.ROW_BAND_TOP)
+        band = span / n
+        return height * self.ROW_BAND_TOP + band * k, band
+
     def _show_image(self):
         if not self.images:
             return
+        from PySide6.QtGui import QPainter, QPen, QColor
+        from PySide6.QtCore import QTimer
         r = max(self.table.currentRow(), 0)
         pages = self.result.get('row_pages') or [0] * self.table.rowCount()
         pg = min(pages[r] if r < len(pages) else 0, len(self.images) - 1)
-        dlg = QDialog(self); dlg.setWindowTitle(f'صورة الصفحة {pg + 1}')
-        dlg.resize(720, 820)
+        dlg = QDialog(self)
+        dlg.setWindowTitle(f'صورة الصفحة {pg + 1} — موضع الصف {r + 1} (تقريبي)')
+        dlg.resize(780, 840)
         v = QVBoxLayout(dlg)
-        area = QScrollArea(); area.setWidgetResizable(True)
-        lbl = QLabel()
-        lbl.setPixmap(QPixmap(self.images[pg]).scaledToWidth(680, Qt.SmoothTransformation))
+        note = QLabel('الشريط المُظلَّل هو الموضع التقريبي للصف المحدد — مرّر قليلاً '
+                      'لأعلى أو لأسفل إن لم يطابق تماماً.')
+        note.setWordWrap(True); note.setStyleSheet('color:#8a9294; font-size:11px')
+        v.addWidget(note)
+        area = QScrollArea(); area.setWidgetResizable(False)
+        pm = QPixmap(self.images[pg])
+        y0 = band = 0
+        if not pm.isNull():
+            pm = pm.scaledToWidth(900, Qt.SmoothTransformation)
+            y0, band = self.row_band(r, pm.height())
+            p = QPainter(pm)
+            p.setPen(QPen(QColor('#E6EC26'), 3))
+            p.setBrush(QColor(230, 236, 38, 55))
+            p.drawRect(0, int(y0), pm.width() - 1, max(int(band), 6))
+            p.end()
+        lbl = QLabel(); lbl.setPixmap(pm); lbl.resize(pm.size())
         area.setWidget(lbl); v.addWidget(area)
+        # مرّر تلقائياً إلى الشريط بحيث يظهر في وسط النافذة
+        def _scroll():
+            bar = area.verticalScrollBar()
+            bar.setValue(max(0, int(y0 + band / 2 - area.viewport().height() / 2)))
+        QTimer.singleShot(0, _scroll)
         dlg.exec()
