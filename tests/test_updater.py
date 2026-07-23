@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""آلية التحديث التلقائي: مقارنة الإصدارات، روابط درايف، الفحص."""
+"""آلية التحديث التلقائي عبر GitHub Releases: مقارنة الإصدارات والفحص."""
 import io, json
 import pytest
 from core import updater
@@ -12,12 +12,10 @@ def test_parse_ver():
     assert updater.parse_ver('1.10') > updater.parse_ver('1.9')
 
 
-def test_gdrive_direct_from_share_link():
-    url = updater.gdrive_direct('https://drive.google.com/file/d/ABC-123_xyz/view?usp=sharing')
-    assert 'drive.usercontent.google.com/download' in url and 'id=ABC-123_xyz' in url
-    url2 = updater.gdrive_direct('https://drive.google.com/uc?export=download&id=QQQ')
-    assert 'id=QQQ' in url2
-    assert updater.gdrive_direct('https://example.com/app.exe') == 'https://example.com/app.exe'
+def test_no_drive_legacy_remains():
+    """GitHub هو المصدر الوحيد — لا تُعِد أي تحويل لروابط درايف."""
+    assert not hasattr(updater, 'gdrive_direct')
+    assert 'drive.google' not in open(updater.__file__, encoding='utf-8').read()
 
 
 def _mock_manifest(monkeypatch, payload):

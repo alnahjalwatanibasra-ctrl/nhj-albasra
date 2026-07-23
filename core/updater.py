@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-"""التحديث التلقائي عبر Google Drive:
-version.json على درايف يحمل {version, url, notes} — التطبيق يقارن، ينزّل الـ exe الجديد،
-ويستبدل نفسه بسكربت bat يعمل بعد إغلاقه ثم يعيد تشغيله."""
+"""التحديث التلقائي عبر GitHub Releases:
+version.json يحمل {version, url, notes} — التطبيق يقارن، ينزّل الـ exe الجديد،
+ويستبدل نفسه بسكربت bat يعمل بعد إغلاقه ثم يعيد تشغيله.
+(أُزيل دعم Google Drive نهائياً — GitHub هو المصدر الوحيد.)"""
 import json, os, re, sys, tempfile, subprocess, urllib.request
 
 
@@ -13,25 +14,11 @@ def parse_ver(s):
     return tuple(nums)
 
 
-def gdrive_direct(url):
-    """يحوّل رابط المشاركة إلى رابط تنزيل مباشر.
-    روابط GitHub Releases مباشرة أصلاً فتمرّ كما هي؛ روابط درايف تُحوَّل."""
-    url = str(url or '').strip()
-    if 'github.com' in url or 'githubusercontent.com' in url:
-        return url          # GitHub: رابط تنزيل نظيف مباشر
-    m = (re.search(r'drive\.google\.com/file/d/([\w-]+)', url)
-         or re.search(r'[?&]id=([\w-]+)', url))
-    if m:
-        return ('https://drive.usercontent.google.com/download?id=%s'
-                '&export=download&confirm=t' % m.group(1))
-    return url          # رابط مباشر أصلاً (خادم آخر)
-
-
 def fetch_manifest(manifest_url, timeout=30):
     """يقرأ version.json — يعيد dict أو يرمي استثناء.
     يكسر التخزين المؤقت (طابع زمني) حتى يرى الفحص اليدوي أحدث إصدار فوراً."""
     import time as _t
-    url = gdrive_direct(manifest_url)
+    url = str(manifest_url or '').strip()
     url += ('&' if '?' in url else '?') + '_=%d' % int(_t.time())
     req = urllib.request.Request(url, headers={
         'User-Agent': 'NhjALBasra-Updater',
@@ -54,7 +41,7 @@ def download(url, progress=None, timeout=60):
     """ينزّل الـ exe الجديد إلى ملف مؤقت. progress(نسبة مئوية أو -1 إن مجهولة).
     مهلة على مستوى المقبس: إن توقّف التدفّق يفشل برسالة بدل التعليق للأبد."""
     import socket
-    req = urllib.request.Request(gdrive_direct(url),
+    req = urllib.request.Request(str(url or '').strip(),
                                  headers={'User-Agent': 'Mozilla/5.0 NhjALBasra-Updater'})
     resp = urllib.request.urlopen(req, timeout=timeout)   # يتبع إعادة توجيه GitHub تلقائياً
     total = int(resp.headers.get('Content-Length') or 0)
