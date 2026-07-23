@@ -54,11 +54,11 @@ class ShareGrid(QListWidget):
         self.setAcceptDrops(True)
         self.setDragDropMode(QListWidget.DropOnly)
         self.setStyleSheet(
-            'QListWidget { background:#EAF7F5; border:2px dashed #9AD4CF;'
+            'QListWidget { background:#CDEBE1; border:2px dashed #6FBFB4;'
             ' border-radius:12px; padding:8px; }'
-            ' QListWidget::item { color:#0B6663; }'
-            ' QListWidget::item:selected { background:#CBEBE7;'
-            ' border-radius:8px; color:#0B4F4C; }')
+            ' QListWidget::item { color:#0A5A54; }'
+            ' QListWidget::item:selected { background:#A2D8CA;'
+            ' border-radius:8px; color:#083F3A; }')
 
     def dragEnterEvent(self, e):
         if e.mimeData().hasUrls():
