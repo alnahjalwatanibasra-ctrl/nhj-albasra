@@ -49,6 +49,12 @@ class SettingsDialog(QDialog):
         b_up.clicked.connect(self._check_updates)
         r_up.addWidget(b_up)
         v_up.addLayout(r_up)
+        # إظهار مصدر التحديث الفعّال — يكشف فوراً أي رابط قديم يعطّل التحديث
+        from core import config as _cfg
+        lbl_src = QLabel('مصدر التحديث: ' + _cfg.manifest_url(settings))
+        lbl_src.setWordWrap(True)
+        lbl_src.setStyleSheet('color:#8a9294; font-size:10px')
+        v_up.addWidget(lbl_src)
         v.addWidget(g_up)
 
         self.btn_reveal = QPushButton('⚙ إظهار الإعدادات المتقدمة')

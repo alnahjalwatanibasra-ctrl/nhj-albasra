@@ -107,8 +107,11 @@ def manual_check(parent):
     finally:
         QApplication.restoreOverrideCursor()
     if err is not None:
+        # نُظهر المصدر المستعمل: فشل صامت بسبب رابط قديم محفوظ كان يمنع التحديث
+        # على أجهزة المكتب دون أي مؤشّر على السبب
         QMessageBox.warning(parent, 'التحديثات',
-                            'تعذر الفحص — تحقق من الإنترنت وحاول لاحقاً.')
+                            'تعذر الفحص — تحقق من الإنترنت وحاول لاحقاً.\n\n'
+                            f'مصدر التحديث المستعمل:\n{url}')
     elif info:
         offer_update(parent, info)
     else:

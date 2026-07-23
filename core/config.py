@@ -55,6 +55,9 @@ def load_settings():
             s.update(json.load(open(SETTINGS_PATH, encoding='utf-8')))
         except Exception:
             pass
+    # تنظيف ذاتي: رابط تحديث موروث غير صالح يُهمَل بدل أن يعطّل التحديث بصمت
+    if not is_valid_manifest_override(s.get('update_manifest_url')):
+        s['update_manifest_url'] = ''
     return s
 
 
@@ -62,13 +65,18 @@ def save_settings(s):
     json.dump(s, open(SETTINGS_PATH, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
 
 
+def is_valid_manifest_override(url):
+    """التجاوز مقبول فقط إن كان رابط GitHub. أي رابط قديم (درايف/تالف/فارغ)
+    كان يُستعمل فيفشل الفحص بصمت فلا يصل تحديث أبداً — علّة أصابت أجهزة المكتب."""
+    u = (url or '').strip().lower()
+    return bool(u) and 'github.com' in u
+
+
 def manifest_url(settings=None):
-    """رابط التحديثات الفعّال: تجاوز المستخدم إن وُجد، وإلا رابط GitHub المدمج.
-    لا يعتمد على القيمة المحفوظة (قد تكون فارغة في إعدادات أُنشئت قبل دمج الرابط)."""
+    """رابط التحديثات الفعّال: تجاوز GitHub صالح إن وُجد، وإلا الرابط المدمج."""
     settings = settings if settings is not None else load_settings()
     override = (settings.get('update_manifest_url') or '').strip()
-    # نتجاهل رابط درايف القديم إن بقي محفوظاً — GitHub هو المصدر الآن
-    if override and 'drive.google.com/file/d/...' not in override:
+    if is_valid_manifest_override(override):
         return override
     return _DEFAULT_MANIFEST_URL
 
