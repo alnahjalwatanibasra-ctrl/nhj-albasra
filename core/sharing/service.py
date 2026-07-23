@@ -42,6 +42,11 @@ class ShareService:
     def resolve_missing(self, fid, new_path):
         self.registry.resolve_missing(fid, new_path)
 
+    def forget_incoming(self, peer_id, file_id):
+        """يزيل ملف زميل عالقاً من قائمتي المحلية. لو كان محذوفاً فعلاً لن يعود؛
+        ولو كان صاحبه متصلاً وما زال يشاركه فسيعود عند التحديث التالي."""
+        return self.cache.forget(peer_id, file_id)
+
     def my_files(self):
         return self.registry.list()
 

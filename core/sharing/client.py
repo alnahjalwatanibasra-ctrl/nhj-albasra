@@ -62,6 +62,21 @@ class IndexCache:
     def get(self, peer_id):
         return self.data.get(peer_id)
 
+    def forget(self, peer_id, file_id):
+        """يمسح ملفاً واحداً من كاش قرين (لإزالة عنصر عالق يدوياً).
+        يعيد True إن مُسح شيء. لو أُفرغ القرين يُزال بالكامل."""
+        e = self.data.get(peer_id)
+        if not e:
+            return False
+        before = len(e.get('files', []))
+        e['files'] = [f for f in e.get('files', []) if f.get('id') != file_id]
+        if len(e['files']) == before:
+            return False
+        if not e['files']:
+            self.data.pop(peer_id, None)
+        self._save()
+        return True
+
     def all(self):
         return self.data
 

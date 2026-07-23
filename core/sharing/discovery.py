@@ -5,7 +5,9 @@ import json, socket, threading, time
 MAGIC = 'NHJ-BASRA-SHARE-1'
 BROADCAST_PORT = 48711
 BEACON_INTERVAL = 3.0
-PEER_TIMEOUT = 10.0
+# مهلة أطول = ~5 إعلانات مفقودة قبل اعتبار القرين غير متصل. تقلّل التذبذب
+# الكاذب على شبكات الواي فاي (فقد حزم بثّ عابر) الذي كان يُظهر الملفات المحذوفة كأشباح
+PEER_TIMEOUT = 16.0
 
 
 def encode_beacon(device_id, name, http_port):

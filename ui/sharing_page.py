@@ -113,7 +113,7 @@ class SharingPage(QWidget):
         b_open = QPushButton('فتح مجلد المستلمات'); b_open.setObjectName('ghost')
         b_open.clicked.connect(self._open_received)
         self.btn_rm = QPushButton('إزالة من المشاركة'); self.btn_rm.setObjectName('danger')
-        self.btn_rm.clicked.connect(self._remove_mine)
+        self.btn_rm.clicked.connect(self._remove_selected)
         bar.addWidget(self.btn_go); bar.addWidget(b_pick); bar.addWidget(b_open)
         bar.addStretch(1); bar.addWidget(self.btn_rm)
         v.addLayout(bar)
@@ -147,7 +147,15 @@ class SharingPage(QWidget):
     def _sync_buttons(self):
         d = self._current()
         self.btn_go.setEnabled(d is not None)
-        self.btn_rm.setEnabled(bool(d) and d['kind'] == 'mine')
+        if d and d['kind'] == 'mine':
+            self.btn_rm.setEnabled(True)
+            self.btn_rm.setText('إزالة من المشاركة')
+        elif d and d['kind'] == 'peer':
+            self.btn_rm.setEnabled(True)
+            self.btn_rm.setText('إزالة من قائمتي')
+        else:
+            self.btn_rm.setEnabled(False)
+            self.btn_rm.setText('إزالة من المشاركة')
 
     def _activate(self, *args):
         """ملف زميل ⟵ تنزيل، وملفي ⟵ فتحه من مكانه."""
@@ -163,15 +171,27 @@ class SharingPage(QWidget):
             return
         self._download(d['row'])
 
-    def _remove_mine(self):
+    def _remove_selected(self):
         d = self._current()
-        if not d or d['kind'] != 'mine':
+        if not d:
             return
-        if QMessageBox.question(self, 'إزالة',
-                                'إزالة هذا الملف من المشاركة؟ (لن يُحذف الأصل من جهازك)'
-                                ) == QMessageBox.StandardButton.Yes:
-            self.service.unshare(d['id'])
-            self.refresh()
+        if d['kind'] == 'mine':
+            if QMessageBox.question(
+                    self, 'إزالة',
+                    'إزالة هذا الملف من المشاركة؟ (لن يُحذف الأصل من جهازك)'
+                    ) == QMessageBox.StandardButton.Yes:
+                self.service.unshare(d['id'])
+                self.refresh()
+        else:  # ملف زميل عالق ⟵ إزالة من قائمتي المحلية
+            r = d['row']
+            if QMessageBox.question(
+                    self, 'إزالة من قائمتي',
+                    'إزالة هذا الملف من قائمتك؟\n'
+                    '(إن كان صاحبه ما زال يشاركه ومتصلاً فسيعود؛ '
+                    'وإن كان قد حذفه فلن يعود.)'
+                    ) == QMessageBox.StandardButton.Yes:
+                self.service.forget_incoming(r['peer_id'], r['id'])
+                self.refresh()
 
     # -- التنزيل --
     def _download(self, row):
